@@ -7,5 +7,7 @@ class Cls1:
     def method1(self):
         pass
 
-a = ePYt.values.ClassDef(Cls1)
-a
+
+a = ePYt.types.ClassDef(Cls1)
+b = ePYt.graph.from_file("./target.py")
+_ = input()

@@ -1,5 +1,4 @@
 import ast
-import sys
 from copy import deepcopy
 
 branchType = [ast.If, ast.For, ast.While]
@@ -92,8 +91,9 @@ class Graph(ast.NodeVisitor):
         return node
 
 
-x = open(sys.argv[1]).read()
-root = ast.parse(x)
-x = Graph(root)
-for node in x.nodes:
-    node.print()
+def from_file(file_path):
+    x = open(file_path).read()
+    root = ast.parse(x)
+    x = Graph(root)
+    for node in x.nodes:
+        node.print()
