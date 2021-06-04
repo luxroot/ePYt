@@ -1,12 +1,7 @@
-class AClass:
-    def method(self, a):
-        return a + 3
-
-
-class BClass:
-    def method(self, a: str):
-        pass
+import pathlib
 
 
 def func(var):
+    a = pathlib.Path("./asdf")
     var.method(3)
+    var + 2

@@ -39,3 +39,6 @@ class Memory:
             if key in joined_mem:
                 joined_mem[key] = value.join(joined_mem[key])
         return joined_mem
+
+    def __eq__(self, other: 'Memory'):
+        return self.memory == other.memory

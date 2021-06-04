@@ -21,6 +21,5 @@ def func(var):
 # fvisit = ePYt.analysis.FuncVisitor()
 # fvisit.visit(a)
 
-a = ePYt.domain.PrimitiveType("list")
-print(a)
+a = ePYt.analysis.Analyzer("./target.py")
 _ = input()

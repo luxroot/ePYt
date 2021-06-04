@@ -34,6 +34,12 @@ class HasAttr(BaseType):
         self.properties = list()
         self.methods = list()
 
+    def has_property(self, prop):
+        return prop in self.properties
+
+    def has_method(self, method):
+        return method in map(lambda x: x[0], self.methods)
+
     def __str__(self):
         return "HasAttr\n" + \
                "\n".join(["Properties",
@@ -41,11 +47,20 @@ class HasAttr(BaseType):
                           "Methods",
                           "\n".join(map(str, self.methods))])
 
+    def __le__(self, other: 'HasAttr'):
+        return self.properties <= other.properties and \
+               self.methods <= other.methods
+
+    def __ge__(self, other: 'HasAttr'):
+        return other <= self
+
 
 class Typed(HasAttr):
-    def __init__(self, typedef):
+    def __init__(self, typedef: preanalysis.TypeDef):
         super().__init__()
         self.typedef = typedef
+        self.properties.extend(typedef.type.properties)
+        self.methods.extend(typedef.type.methods)
 
 
 class PrimitiveType(HasAttr):
@@ -56,8 +71,8 @@ class PrimitiveType(HasAttr):
         if type_ in self.prim_types:
             self.type_ = type_
             self.type_def = preanalysis.TypeDef(eval(type_))
-            self.properties.extend(list(self.type_def.type.properties))
-            self.methods.extend(list(self.type_def.type.methods))
+            self.properties.extend(self.type_def.type.properties)
+            self.methods.extend(self.type_def.type.methods)
 
     def __str__(self):
         return f"Primitive type [{self.type_}]\n{super().__str__()}"

@@ -1,3 +1,4 @@
+import ast
 from inspect import signature, getmembers
 from . import domain
 
@@ -31,3 +32,8 @@ class TypeDef:
 
     def __repr__(self):
         return f"TypeDef <{str(self)}>"
+
+
+def get_typedefs(script):
+    tree = ast.parse(script)
+    tree

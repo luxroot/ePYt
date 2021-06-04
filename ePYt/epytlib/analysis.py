@@ -1,5 +1,5 @@
 import ast
-from . import memory
+from . import memory, preanalysis, domain
 
 
 class FuncVisitor(ast.NodeVisitor):
@@ -10,4 +10,9 @@ class FuncVisitor(ast.NodeVisitor):
 
 
 class Analyzer:
-    pass
+    prim_types = [*map(domain.PrimitiveType, domain.PrimitiveType.prim_types)]
+
+    def __init__(self, file_path):
+        script = open(file_path).read()
+        self.user_types = preanalysis.get_typedefs(script)
+
