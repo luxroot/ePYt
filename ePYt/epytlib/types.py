@@ -1,24 +1,23 @@
-from inspect import signature, getmembers
+from inspect import signature, getmembers, isbuiltin
 
 
 class TypeDef:
     @staticmethod
     def _has_signature(x):
-        s = getattr(x, "__text_signature__", None)
-        return s
+        return not isbuiltin(x) or getattr(x, "__text_signature__", None)
 
     def __init__(self, class_):
         self.class_ = class_
         self.module_name = class_.__module__
         self.class_name = str(class_)[8:-2].split('.')[1]
-        self.methods = \
-            list(map(lambda x: (x[0], signature(x[1])),
-                     filter(lambda y:
-                            callable(y[1]) and self._has_signature(y[1]),
-                            getmembers(class_)[1:])))
-        self.properties = \
-            list(map(lambda x: x[0],
-                     filter(lambda y: not callable(y[1]), getmembers(class_))))
+        self.methods = list()
+        self.properties = list()
+        for member in getmembers(class_)[1:]:
+            if not callable(member[1]):
+                self.properties.append(member[0])
+            elif self._has_signature(member[1]):
+                self.methods.append((member[0], signature(member[1])))
+                # Maybe we should use FullArgSpec instead of signature
 
     def __str__(self):
         return "\n".join(map(str, [f"Module : {str(self.module_name)}",

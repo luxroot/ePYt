@@ -8,6 +8,7 @@ class Cls1:
         pass
 
 
-a = ePYt.types.ClassDef(Cls1)
+a = ePYt.types.TypeDef(Cls1)
 b = ePYt.graph.from_file("./target.py")
+print(a)
 _ = input()
