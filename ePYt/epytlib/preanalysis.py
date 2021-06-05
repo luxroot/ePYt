@@ -22,7 +22,7 @@ class TypeDef:
         self.type = domain.HasAttr()
         for key, value in getmembers(class_):
             if callable(value):
-                if hasattr(object, key) and type(value) == type(getattr(object, key)):
+                if hasattr(object, key) and value == getattr(object, key):
                     continue
                 self.type.methods.append((key, self._get_signature(value)))
             else:
