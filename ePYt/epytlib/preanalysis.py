@@ -2,8 +2,8 @@ import ast
 from inspect import signature, getmembers, isclass
 from pathlib import Path
 from types import ModuleType
-
 from . import domain
+
 
 class TypeDef:
     @staticmethod
@@ -37,6 +37,7 @@ class TypeDef:
     def __repr__(self):
         return f"<TypeDef {self.module_name}.{self.class_name}\t" + \
                f"{repr(self.type)}"
+
 
 def get_typedefs(script_path):
     script_path = Path(script_path)
