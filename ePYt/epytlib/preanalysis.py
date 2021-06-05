@@ -22,11 +22,8 @@ class TypeDef:
         self.type = domain.HasAttr()
         for key, value in getmembers(class_):
             if callable(value):
-                try:
-                    if type(value) == type(getattr(object, key)):
-                        continue
-                except AttributeError:
-                    pass
+                if hasattr(object, key) and type(value) == type(getattr(object, key)):
+                    continue
                 self.type.methods.append((key, self._get_signature(value)))
             else:
                 self.type.properties.append(key)
