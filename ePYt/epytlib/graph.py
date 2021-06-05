@@ -1,10 +1,10 @@
 import ast
 
 class Node:
-    def __init__(self, instr_, prev_, lineno_):
-        self.instr = instr_
-        self.prev = prev_
-        self.lineno = lineno_
+    def __init__(self, instr, prev, lineno):
+        self.instr = instr
+        self.prev = prev
+        self.lineno = lineno
 
     def print(self):
         print('=====================')
@@ -23,9 +23,9 @@ class Atomic(Node):
         return 'atomic'
 
 class Branch(Node):
-    def __init__(self, truth_, instr, prev, lineno):
+    def __init__(self, truth, instr, prev, lineno):
         super().__init__(instr, prev, lineno)
-        self.truth = truth_
+        self.truth = truth
     
     def __str__(self):
         return f'branch - {self.truth}'
@@ -34,28 +34,28 @@ class Branch(Node):
         return Branch(not self.truth, self.instr, self.prev, self.lineno)
 
 class FunDef(Node):
-    def __init__(self, name_, args_, prev, lineno):
-        self.name = name_
-        self.args = args_
+    def __init__(self, name, args, prev, lineno):
+        self.name = name
+        self.args = args
         super().__init__(f'def {self.name}({self.args})', prev, lineno)
 
     def __str__(self):
         return f'FunctionDef of {self.name}'
 
 class ClassDef(Node):
-    def __init__(self, name_, prev, lineno):
-        self.name = name_
+    def __init__(self, name, prev, lineno):
+        self.name = name
         super().__init__(f'class {self.name}', prev, lineno)
     
     def __str__(self):
         return f'ClassDef of {self.name}'
     
 class Try(Node):
-    def __init__(self, is_except, prev, lineno, exception_=None):
+    def __init__(self, is_except, prev, lineno, exception=None):
         super().__init__('try-except', prev, lineno)
         self.is_except = is_except
         if self.is_except:
-            self.exception = exception_
+            self.exception = exception
         else:
             self.exception = None
     
