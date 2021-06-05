@@ -1,19 +1,21 @@
 import ast
 from pathlib import Path
+from . import memory
 
 
 class Node:
-    def __init__(self, instr, prev):
-        self.instr = instr
+    def __init__(self, instr_list, prev):
+        self.instr_list = instr_list
         self.prev = prev
+        self.memory = memory.Memory()
 
     def __str__(self):
-        return f"{ast.unparse(self.instr)} -> " + \
+        return f"{','.join(map(ast.unparse, self.instr_list))} -> " + \
                (','.join(list(map(lambda x: x.str_without_prev(),
                                   self.prev))) if self.prev != [] else "")
 
     def str_without_prev(self):
-        return ast.unparse(self.instr)
+        return ast.unparse(self.instr_list)
 
     def __repr__(self):
         return f"<Node {str(self)}>"
@@ -24,30 +26,30 @@ class Atomic(Node):
 
 
 class Branch(Node):
-    def __init__(self, truth, instr, prev):
-        super().__init__(instr, prev)
+    def __init__(self, truth, instr_list, prev):
+        super().__init__(instr_list, prev)
         self.truth = truth
 
     def __str__(self):
         return f'Branch taken {self.truth} ' + \
-               f"test: {ast.unparse(self.instr)}" + \
+               f"test: {','.join(map(ast.unparse, self.instr_list))}" + \
                f" -> {','.join(map(str, self.prev))}"
 
     def fork(self):
-        return Branch(not self.truth, self.instr, self.prev)
+        return Branch(not self.truth, self.instr_list, self.prev)
 
 
-class FunDef(Node):
+class FuncDef(Node):
     def __init__(self, name, args, prev):
         self.name = name
         self.args = args
-        super().__init__(f'def {self.name}({self.args})', prev)
-
-    def str_without_prev(self):
-        return f'FunctionDef of {self.name}'
+        super().__init__(f'def {self.name}({ast.unparse(self.args)})', prev)
 
     def __str__(self):
         return f'FunctionDef of {self.name}'
+
+    def str_without_prev(self):
+        return str(self)
 
 
 # class ClassDef(Node):
@@ -88,7 +90,7 @@ class Graph(ast.NodeVisitor):
             if isinstance(stmt, self.handling_types):
                 self.visit(stmt)
             else:
-                node = Atomic(stmt, self.current_prev)
+                node = Atomic([stmt], self.current_prev)
                 self.nodes.append(node)
                 self.current_prev = [node]
 
@@ -134,7 +136,7 @@ class Graph(ast.NodeVisitor):
     #
     def visit_FunctionDef(self, node):
         self.current_prev = []
-        n = FunDef(node.name, ast.unparse(node.args), self.current_prev)
+        n = FuncDef([node.name], node.args, self.current_prev)
 
         self.nodes.append(n)
         self.current_prev = [n]
