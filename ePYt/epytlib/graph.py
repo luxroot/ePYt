@@ -1,7 +1,21 @@
 import ast
-from copy import deepcopy
+import jedi
+from . import domain
 
-branchType = [ast.If, ast.For, ast.While]
+specialType = [ast.If, ast.For, ast.While, ast.FunctionDef]
+
+# temporary types
+class Branch(domain.BaseType):
+    def __init__(self):
+        super().__init__()
+    
+class FunDef(domain.BaseType):
+    def __init__(self):
+        super().__init__()
+    
+class Atomic(domain.BaseType):
+    def __init__(self):
+        super().__init__()
 
 
 class Node:
@@ -12,42 +26,39 @@ class Node:
         self.lineno = lineno_
 
     def fork(self):
-        node = Node(self.type, self.instr, self.prev, self.lineno)
-        branch = node.type.split('-')
-        if branch[1] == 't':
-            node.type = 'branch-f'
-        else:
-            node.type = 'branch-t'
+        node = Node(Branch(), self.instr, self.prev, self.lineno)
         return node
 
     def print(self):
         print('=====================')
         print(f'instr: {self.instr} [{self.lineno}]')
         print(f'type : {self.type}')
-        print('prevs')
+        print('prevs:')
         for p in self.prev:
             print(f' - {p.instr} [{p.lineno}]')
         print('=====================\n')
 
 
 class Graph(ast.NodeVisitor):
-    def __init__(self, root=None):
-        self.nodes = list()
+    def __init__(self, script:jedi.Script):
+        self.script = script
+        self.nodes = []
         self.prev = []
-        if root:
-            self.parse(root.body)
 
     def parse(self, stmts):
         for stmt in stmts:
-            if type(stmt) in branchType:
+            if type(stmt) in specialType:
                 self.visit(stmt)
             else:
-                node = Node('atomic', ast.unparse(stmt), self.prev, stmt.lineno)
+                node = Node(Atomic(), ast.unparse(stmt), self.prev, stmt.lineno)
+                inferred_type = self.script.infer(stmt.lineno, stmt.col_offset)
+                if inferred_type:
+                    node.type = inferred_type[0]
                 self.nodes.append(node)
                 self.prev = [node]
 
     def visit_If(self, node):
-        nt = Node('branch-t', f'if {ast.unparse(node.test)}', self.prev, node.lineno)
+        nt = Node(Branch(), f'if {ast.unparse(node.test)}', self.prev, node.lineno)
         nf = nt.fork()
 
         self.nodes.append(nt)
@@ -65,7 +76,7 @@ class Graph(ast.NodeVisitor):
 
     def visit_For(self, node):
         cond = f'{ast.unparse(node.target)} in {ast.unparse(node.iter)}'
-        nt = Node('branch-t', f'for {cond}', self.prev, node.lineno)
+        nt = Node(Branch(), f'for {cond}', self.prev, node.lineno)
         nf = nt.fork()
 
         self.nodes.append(nt)
@@ -74,11 +85,11 @@ class Graph(ast.NodeVisitor):
         self.prev = [nt]
         self.parse(node.body)
 
-        self.prev.extend(nf)
+        self.prev.extend([nf])
         return node
     
     def visit_While(self, node):
-        nt = Node('branch-t', f'while {node.tset}', self.prev, node.lineno)
+        nt = Node(Branch(), f'while {ast.unparse(node.test)}', self.prev, node.lineno)
         nf = nt.fork()
 
         self.nodes.append(nt)
@@ -87,13 +98,24 @@ class Graph(ast.NodeVisitor):
         self.prev = [nt]
         self.parse(node.body)
 
-        self.prev.extend(nf)
+        self.prev.extend([nf])
         return node
+    
+    def visit_FunctionDef(self, node):
+        self.prev = []
+        n = Node(FunDef(), f'def {node.name}({ast.unparse(node.args)})', self.prev, node.lineno)
 
-
+        self.nodes.append(n)
+        self.prev = [n]
+        self.parse(node.body)
+        
+        self.prev = []
+        return node
+    
 def from_file(file_path):
-    x = open(file_path).read()
-    root = ast.parse(x)
-    x = Graph(root)
-    for node in x.nodes:
-        node.print()
+    script = jedi.Script(path=file_path)
+    graph = Graph(script)
+    code = open(file_path, "r").read()
+    root = ast.parse(code, file_path)
+    graph.parse(root.body)
+    return graph
