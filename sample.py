@@ -9,11 +9,11 @@ class Class1:
         self.a = 1
 
     def method(self):
-        print('hi')
+        print(self.prop)
 
 
 a = ePYt.preanalysis.TypeDef(Class1)
 b = ePYt.domain.PrimitiveType("int")
-print(a)
-print(b)
+print(repr(a))
+print(repr(b))
 _ = input()

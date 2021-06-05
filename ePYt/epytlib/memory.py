@@ -1,3 +1,4 @@
+from copy import deepcopy
 from itertools import chain
 from . import domain
 
@@ -39,7 +40,7 @@ class Memory:
             if key in joined_mem:
                 joined_mem[key] = value.join(joined_mem[key])
             else:
-                joined_mem[key] = value
+                joined_mem[key] = deepcopy(value)
         return joined_mem
 
     def __eq__(self, other: 'Memory'):

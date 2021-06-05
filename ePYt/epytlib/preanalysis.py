@@ -25,13 +25,14 @@ class TypeDef:
                 self.type.properties.append(key)
 
     def __str__(self):
-        return "\n".join(map(str, [f"Module : {str(self.module_name)}",
-                                   f"Class name : {str(self.class_name)}",
+        return "\n".join(map(str, [f"Module : {self.module_name}",
+                                   f"Class name : {self.class_name}",
                                    "Corresponding HasAttr:",
                                    str(self.type)]))
 
     def __repr__(self):
-        return f"TypeDef <{str(self)}>"
+        return f"<TypeDef {self.module_name}.{self.class_name}\t" + \
+               f"{repr(self.type)}"
 
 
 def get_typedefs(script):

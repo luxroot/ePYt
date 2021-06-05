@@ -26,7 +26,11 @@ class BaseType:
 
 
 class AnyType(BaseType):
-    pass
+    def __str__(self):
+        return "AnyType"
+
+    def __repr__(self):
+        return "<Type AnyType>"
 
 
 class HasAttr(BaseType):
@@ -44,6 +48,11 @@ class HasAttr(BaseType):
         return "HasAttr\n" + \
                "\n".join(["Properties", "\n".join(self.properties),
                           "Methods", "\n".join(map(str, self.methods))])
+
+    def __repr__(self):
+        return '<HasAttr [Prop:' + ','.join(self.properties)[:50] + '\t' + \
+               'Method:' + ','.join(map(lambda x: x[0], self.methods))[:50] + \
+               ']>'
 
     def __le__(self, other: 'HasAttr'):
         return self.properties <= other.properties and \
