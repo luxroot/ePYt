@@ -10,7 +10,7 @@ class Node:
         self.memory = memory.Memory()
 
     def __str__(self):
-        return f"{','.join(map(ast.unparse, self.instr_list))} -> " + \
+        return f"{','.join(map(ast.unparse, self.instr_list))} <- " + \
                (','.join(list(map(lambda x: x.str_without_prev(),
                                   self.prev))) if self.prev != [] else "")
 
@@ -33,17 +33,17 @@ class Branch(Node):
     def __str__(self):
         return f'Branch taken {self.truth} ' + \
                f"test: {','.join(map(ast.unparse, self.instr_list))}" + \
-               f" -> {','.join(map(str, self.prev))}"
+               f" <- {','.join(map(str, self.prev))}"
 
     def fork(self):
         return Branch(not self.truth, self.instr_list, self.prev)
 
 
-class FuncDef(Node):
-    def __init__(self, name, args, prev):
+class FuncDefNode(Node):
+    def __init__(self, name, args):
         self.name = name
         self.args = args
-        super().__init__(f'def {self.name}({ast.unparse(self.args)})', prev)
+        super().__init__([], [])
 
     def __str__(self):
         return f'FunctionDef of {self.name}'
@@ -84,6 +84,7 @@ class Graph(ast.NodeVisitor):
     def __init__(self):
         self.nodes = []
         self.current_prev = []
+        self.func_defs = {}
 
     def parse(self, stmts):
         for stmt in stmts:
@@ -135,16 +136,15 @@ class Graph(ast.NodeVisitor):
     #     return node
     #
     def visit_FunctionDef(self, node):
-        self.current_prev = []
-        n = FuncDef([node.name], node.args, self.current_prev)
-
+        n = FuncDefNode([node.name], node.args)
         self.nodes.append(n)
+        self.func_defs[n.name[0]] = n
+        current_prev_backup = self.current_prev
         self.current_prev = [n]
         self.parse(node.body)
-
-        self.current_prev = []
+        self.current_prev = current_prev_backup
         return node
-    #
+
     # def visit_ClassDef(self, node):
     #     self.current_prev = []
     #     n = ClassDef(node.name, self.current_prev, node.lineno)

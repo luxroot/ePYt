@@ -11,9 +11,14 @@
 #         print(self.prop)
 
 
-def func(var):
+def func(var, qwer):
     a = 1
-    def f():
-        b = 1
-    c = 1
 
+    def f(): b = 1
+
+    c = 1
+    f()
+
+
+class DumbClass:
+    pass
