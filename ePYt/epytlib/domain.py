@@ -70,9 +70,9 @@ class PrimitiveType(HasAttr):
         super().__init__()
         if type_ in self.prim_types:
             self.type_ = type_
-            self.type_def = preanalysis.TypeDef(eval(type_))
-            self.properties.extend(self.type_def.type.properties)
-            self.methods.extend(self.type_def.type.methods)
+            self.typedef = preanalysis.TypeDef(eval(type_))
+            self.properties.extend(self.typedef.type.properties)
+            self.methods.extend(self.typedef.type.methods)
 
     def __str__(self):
         return f"Primitive type [{self.type_}]\n{super().__str__()}"

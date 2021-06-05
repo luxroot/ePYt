@@ -2,24 +2,15 @@ import ePYt
 import ast
 
 
-a = ast.parse('''class AClass:
-    def method(self, a: int):
-        pass
+class Class1:
+    prop = "asdf"
+
+    def __init__(self):
+        self.a = 1
+
+    def method(self):
+        print('hi')
 
 
-class BClass:
-    def method(self, a: str):
-        pass
-
-
-def func(var):
-    var.method(3)
-''')
-#
-#
-#
-# fvisit = ePYt.analysis.FuncVisitor()
-# fvisit.visit(a)
-
-a = ePYt.analysis.Analyzer("./target.py")
+a = ePYt.preanalysis.TypeDef(Class1)
 _ = input()
