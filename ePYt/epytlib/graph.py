@@ -1,7 +1,5 @@
 import ast
 
-specialType = [ast.If, ast.For, ast.While, ast.FunctionDef, ast.ClassDef, ast.Try]
-
 class Node:
     def __init__(self, instr_, prev_, lineno_):
         self.instr = instr_
@@ -69,12 +67,13 @@ class Try(Node):
 
 class Graph(ast.NodeVisitor):
     def __init__(self):
+        self.specialType = [ast.If, ast.For, ast.While, ast.FunctionDef, ast.ClassDef, ast.Try]
         self.nodes = []
         self.prev = []
 
     def parse(self, stmts):
         for stmt in stmts:
-            if type(stmt) in specialType:
+            if type(stmt) in self.specialType:
                 self.visit(stmt)
             else:
                 node = Atomic(ast.unparse(stmt), self.prev, stmt.lineno)
