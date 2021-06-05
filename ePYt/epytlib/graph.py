@@ -1,21 +1,33 @@
 import ast
-import jedi
-from . import domain
 
 specialType = [ast.If, ast.For, ast.While, ast.FunctionDef]
 
-# temporary types
-class Branch(domain.BaseType):
+class NodeType:
+    def __init__(self, name_):
+        self.name = name_
+
+class Atomic(NodeType):
     def __init__(self):
-        super().__init__()
+        super().__init__('atomic')
+
+    def __str__(self):
+        return self.name
+
+class Branch(NodeType):
+    def __init__(self, truth_):
+        super().__init__('branch')
+        self.truth = truth_
     
-class FunDef(domain.BaseType):
-    def __init__(self):
-        super().__init__()
-    
-class Atomic(domain.BaseType):
-    def __init__(self):
-        super().__init__()
+    def __str__(self):
+        return f'{self.name} - {self.truth}'
+
+class FunDef(NodeType):
+    def __init__(self, name_, args_):
+        super().__init__(name_)
+        self.args = args_
+
+    def __str__(self):
+        return f'def {self.name}({self.args})'
 
 
 class Node:
@@ -26,7 +38,7 @@ class Node:
         self.lineno = lineno_
 
     def fork(self):
-        node = Node(Branch(), self.instr, self.prev, self.lineno)
+        node = Node(Branch(False), self.instr, self.prev, self.lineno)
         return node
 
     def print(self):
@@ -40,8 +52,7 @@ class Node:
 
 
 class Graph(ast.NodeVisitor):
-    def __init__(self, script:jedi.Script):
-        self.script = script
+    def __init__(self):
         self.nodes = []
         self.prev = []
 
@@ -51,14 +62,11 @@ class Graph(ast.NodeVisitor):
                 self.visit(stmt)
             else:
                 node = Node(Atomic(), ast.unparse(stmt), self.prev, stmt.lineno)
-                inferred_type = self.script.infer(stmt.lineno, stmt.col_offset)
-                if inferred_type:
-                    node.type = inferred_type[0]
                 self.nodes.append(node)
                 self.prev = [node]
 
     def visit_If(self, node):
-        nt = Node(Branch(), f'if {ast.unparse(node.test)}', self.prev, node.lineno)
+        nt = Node(Branch(True), f'if {ast.unparse(node.test)}', self.prev, node.lineno)
         nf = nt.fork()
 
         self.nodes.append(nt)
@@ -76,7 +84,7 @@ class Graph(ast.NodeVisitor):
 
     def visit_For(self, node):
         cond = f'{ast.unparse(node.target)} in {ast.unparse(node.iter)}'
-        nt = Node(Branch(), f'for {cond}', self.prev, node.lineno)
+        nt = Node(Branch(True), f'for {cond}', self.prev, node.lineno)
         nf = nt.fork()
 
         self.nodes.append(nt)
@@ -89,7 +97,7 @@ class Graph(ast.NodeVisitor):
         return node
     
     def visit_While(self, node):
-        nt = Node(Branch(), f'while {ast.unparse(node.test)}', self.prev, node.lineno)
+        nt = Node(Branch(True), f'while {ast.unparse(node.test)}', self.prev, node.lineno)
         nf = nt.fork()
 
         self.nodes.append(nt)
@@ -103,7 +111,8 @@ class Graph(ast.NodeVisitor):
     
     def visit_FunctionDef(self, node):
         self.prev = []
-        n = Node(FunDef(), f'def {node.name}({ast.unparse(node.args)})', self.prev, node.lineno)
+        fun_type = FunDef(node.name ,ast.unparse(node.args))
+        n = Node(fun_type, str(fun_type), self.prev, node.lineno)
 
         self.nodes.append(n)
         self.prev = [n]
@@ -112,10 +121,9 @@ class Graph(ast.NodeVisitor):
         self.prev = []
         return node
     
-def from_file(file_path):
-    script = jedi.Script(path=file_path)
-    graph = Graph(script)
-    code = open(file_path, "r").read()
-    root = ast.parse(code, file_path)
+def from_file(filename):
+    code = open(filename, 'r').read()
+    root = ast.parse(code, filename)
+    graph = Graph()
     graph.parse(root.body)
     return graph
