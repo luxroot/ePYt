@@ -1,169 +1,182 @@
 import ast
+from pathlib import Path
+
 
 class Node:
-    def __init__(self, instr, prev, lineno):
+    def __init__(self, instr, prev):
         self.instr = instr
         self.prev = prev
-        self.lineno = lineno
 
-    def print(self):
-        print('=====================')
-        print(f'instr: {self.instr} [{self.lineno}]')
-        print(f'type : {str(self)}')
-        print('prevs:')
-        for p in self.prev:
-            print(f' - {p.instr} [{p.lineno}]')
-        print('=====================\n')
+    def __str__(self):
+        return f"{ast.unparse(self.instr)} -> " + \
+               (','.join(list(map(lambda x: x.str_without_prev(),
+                                  self.prev))) if self.prev != [] else "")
+
+    def str_without_prev(self):
+        return ast.unparse(self.instr)
+
+    def __repr__(self):
+        return f"<Node {str(self)}>"
+
 
 class Atomic(Node):
-    def __init__(self, instr, prev, lineno):
-        super().__init__(instr, prev, lineno)
-    
-    def __str__(self):
-        return 'atomic'
+    pass
+
 
 class Branch(Node):
-    def __init__(self, truth, instr, prev, lineno):
-        super().__init__(instr, prev, lineno)
+    def __init__(self, truth, instr, prev):
+        super().__init__(instr, prev)
         self.truth = truth
-    
+
     def __str__(self):
-        return f'branch - {self.truth}'
-    
+        return f'Branch taken {self.truth} ' + \
+               f"test: {ast.unparse(self.instr)}" + \
+               f" -> {','.join(map(str, self.prev))}"
+
     def fork(self):
-        return Branch(not self.truth, self.instr, self.prev, self.lineno)
+        return Branch(not self.truth, self.instr, self.prev)
+
 
 class FunDef(Node):
-    def __init__(self, name, args, prev, lineno):
+    def __init__(self, name, args, prev):
         self.name = name
         self.args = args
-        super().__init__(f'def {self.name}({self.args})', prev, lineno)
+        super().__init__(f'def {self.name}({self.args})', prev)
+
+    def str_without_prev(self):
+        return f'FunctionDef of {self.name}'
 
     def __str__(self):
         return f'FunctionDef of {self.name}'
 
-class ClassDef(Node):
-    def __init__(self, name, prev, lineno):
-        self.name = name
-        super().__init__(f'class {self.name}', prev, lineno)
-    
-    def __str__(self):
-        return f'ClassDef of {self.name}'
-    
-class Try(Node):
-    def __init__(self, is_except, prev, lineno, exception=None):
-        super().__init__('try-except', prev, lineno)
-        self.is_except = is_except
-        if self.is_except:
-            self.exception = exception
-        else:
-            self.exception = None
-    
-    def __str__(self):
-        if self.is_except:
-            return f'except {self.exception}'
-        else:
-            return 'try'
+
+# class ClassDef(Node):
+#     def __init__(self, name, prev):
+#         self.name = name
+#         super().__init__(f'class {self.name}', prev)
+#
+#     def __str__(self):
+#         return f'ClassDef of {self.name}'
+#
+#
+# class TryNode(Node):
+#     def __init__(self, is_except, prev, exception=None):
+#         super().__init__('try-except', prev)
+#         self.is_except = is_except
+#         if self.is_except:
+#             self.exception = exception
+#         else:
+#             self.exception = None
+#
+#     def __str__(self):
+#         if self.is_except:
+#             return f'except {self.exception}'
+#         else:
+#             return 'try'
+
 
 class Graph(ast.NodeVisitor):
+    handling_types = (ast.If, ast.For, ast.While, ast.FunctionDef,
+                      ast.ClassDef, ast.Try)
+
     def __init__(self):
-        self.specialType = [ast.If, ast.For, ast.While, ast.FunctionDef, ast.ClassDef, ast.Try]
         self.nodes = []
-        self.prev = []
+        self.current_prev = []
 
     def parse(self, stmts):
         for stmt in stmts:
-            if type(stmt) in self.specialType:
+            if isinstance(stmt, self.handling_types):
                 self.visit(stmt)
             else:
-                node = Atomic(ast.unparse(stmt), self.prev, stmt.lineno)
+                node = Atomic(stmt, self.current_prev)
                 self.nodes.append(node)
-                self.prev = [node]
+                self.current_prev = [node]
 
     def visit_If(self, node):
-        nt = Branch(True, ast.unparse(node.test), self.prev, node.lineno)
+        nt = Branch(True, node.test, self.current_prev)
         nf = nt.fork()
 
-        self.nodes.append(nt)
-        self.nodes.append(nf)
+        self.nodes.extend([nt, nf])
 
-        self.prev = [nt]
+        self.current_prev = [nt]
         self.parse(node.body)
-        prev_t = self.prev
+        prev_t = self.current_prev
 
-        self.prev = [nf]
+        self.current_prev = [nf]
         self.parse(node.orelse)
-        self.prev.extend(prev_t)
+        self.current_prev.extend(prev_t)
         return node
 
-    def visit_For(self, node):
-        cond = f'{ast.unparse(node.target)} in {ast.unparse(node.iter)}'
-        nt = Branch(True, cond, self.prev, node.lineno)
-        nf = nt.fork()
-
-        self.nodes.append(nt)
-        self.nodes.append(nf)
-
-        self.prev = [nt]
-        self.parse(node.body)
-        self.prev.extend([nf])
-        return node
-    
-    def visit_While(self, node):
-        nt = Branch(True, ast.unparse(node.test), self.prev, node.lineno)
-        nf = nt.fork()
-
-        self.nodes.append(nt)
-        self.nodes.append(nf)
-        
-        self.prev = [nt]
-        self.parse(node.body)
-        self.prev.extend([nf])
-        return node
-    
+    # def visit_For(self, node):
+    #     cond = f'{ast.unparse(node.target)} in {ast.unparse(node.iter)}'
+    #     nt = Branch(True, cond, self.current_prev, node.lineno)
+    #     nf = nt.fork()
+    #
+    #     self.nodes.append(nt)
+    #     self.nodes.append(nf)
+    #
+    #     self.current_prev = [nt]
+    #     self.parse(node.body)
+    #     self.current_prev.extend([nf])
+    #     return node
+    #
+    # def visit_While(self, node):
+    #     nt = Branch(True, ast.unparse(node.test), self.current_prev, node.lineno)
+    #     nf = nt.fork()
+    #
+    #     self.nodes.append(nt)
+    #     self.nodes.append(nf)
+    #
+    #     self.current_prev = [nt]
+    #     self.parse(node.body)
+    #     self.current_prev.extend([nf])
+    #     return node
+    #
     def visit_FunctionDef(self, node):
-        self.prev = []
-        n = FunDef(node.name, ast.unparse(node.args), self.prev, node.lineno)
-        
-        self.nodes.append(n)
-        self.prev = [n]
-        self.parse(node.body)
-        
-        self.prev = []
-        return node
-    
-    def visit_ClassDef(self, node):
-        self.prev = []
-        n = ClassDef(node.name, self.prev, node.lineno)
-
-        for method in node.body:
-            self.prev = [n]
-            self.parse([method])
-
-        self.prev = []
-        return node
-    
-    def visit_Try(self, node):
-        n = Try(False, self.prev, node.lineno)
+        self.current_prev = []
+        n = FunDef(node.name, ast.unparse(node.args), self.current_prev)
 
         self.nodes.append(n)
+        self.current_prev = [n]
         self.parse(node.body)
-        try_prev = self.prev
 
-        for i in range(len(node.handlers)):
-            self.prev = [n]
-            except_n = Try(True, self.prev, node.handlers[i].lineno, ast.unparse(node.handlers[i].type))
-            self.nodes.append(except_n)
-            self.prev = [except_n]
-            self.parse(node.handlers[i].body)
-            try_prev.extend(self.prev)
-
-        self.prev = try_prev
+        self.current_prev = []
         return node
+    #
+    # def visit_ClassDef(self, node):
+    #     self.current_prev = []
+    #     n = ClassDef(node.name, self.current_prev, node.lineno)
+    #
+    #     for method in node.body:
+    #         self.current_prev = [n]
+    #         self.parse([method])
+    #
+    #     self.current_prev = []
+    #     return node
+    #
+    # def visit_Try(self, node):
+    #     n = TryNode(False, self.current_prev, node.lineno)
+    #
+    #     self.nodes.append(n)
+    #     self.parse(node.body)
+    #     try_prev = self.current_prev
+    #
+    #     for i in range(len(node.handlers)):
+    #         self.current_prev = [n]
+    #         except_n = TryNode(True, self.current_prev, node.handlers[i].lineno,
+    #                            ast.unparse(node.handlers[i].type))
+    #         self.nodes.append(except_n)
+    #         self.current_prev = [except_n]
+    #         self.parse(node.handlers[i].body)
+    #         try_prev.extend(self.current_prev)
+    #
+    #     self.current_prev = try_prev
+    #     return node
 
-def parse_from_file(filename):
-    code = open(filename, 'r').read()
-    root = ast.parse(code, filename)
+
+def parse_from_file(script_path):
+    script_path = Path(script_path)
+    tree = ast.parse(script_path.read_text(), script_path.name)
     graph = Graph()
-    graph.parse(root.body)
+    graph.parse(tree.body)
     return graph
