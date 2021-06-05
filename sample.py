@@ -12,8 +12,5 @@ class Class1:
         print(self.prop)
 
 
-a = ePYt.preanalysis.TypeDef(Class1)
-b = ePYt.domain.PrimitiveType("int")
-print(repr(a))
-print(repr(b))
+a = ePYt.analysis.Analyzer("./target.py")
 _ = input()
