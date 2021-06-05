@@ -26,7 +26,11 @@ class BaseType:
 
 
 class AnyType(BaseType):
-    pass
+    def __str__(self):
+        return "AnyType"
+
+    def __repr__(self):
+        return "<Type AnyType>"
 
 
 class HasAttr(BaseType):
@@ -34,18 +38,21 @@ class HasAttr(BaseType):
         self.properties = list()
         self.methods = list()
 
-    def has_property(self, prop):
+    def has_property(self, prop: str):
         return prop in self.properties
 
-    def has_method(self, method):
+    def has_method(self, method: str):
         return method in map(lambda x: x[0], self.methods)
 
     def __str__(self):
         return "HasAttr\n" + \
-               "\n".join(["Properties",
-                          "\n".join(self.properties),
-                          "Methods",
-                          "\n".join(map(str, self.methods))])
+               "\n".join(["Properties", "\n".join(self.properties),
+                          "Methods", "\n".join(map(str, self.methods))])
+
+    def __repr__(self):
+        return '<HasAttr [Prop:' + ','.join(self.properties)[:50] + '\t' + \
+               'Method:' + ','.join(map(lambda x: x[0], self.methods))[:50] + \
+               ']>'
 
     def __le__(self, other: 'HasAttr'):
         return self.properties <= other.properties and \
@@ -62,17 +69,16 @@ class Typed(HasAttr):
         self.properties.extend(typedef.type.properties)
         self.methods.extend(typedef.type.methods)
 
+    def __str__(self):
+        return f"Typed type [{self.typedef.class_name}]\n{super().__str__()}"
 
-class PrimitiveType(HasAttr):
+
+class PrimitiveType(Typed):
     prim_types = ["int", "str", "list", "dict"]  # TODO: To be filled
 
-    def __init__(self, type_):
-        super().__init__()
+    def __init__(self, type_: str):  # Gets string not class
         if type_ in self.prim_types:
-            self.type_ = type_
-            self.type_def = preanalysis.TypeDef(eval(type_))
-            self.properties.extend(self.type_def.type.properties)
-            self.methods.extend(self.type_def.type.methods)
+            super().__init__(preanalysis.TypeDef(eval(type_)))
 
     def __str__(self):
-        return f"Primitive type [{self.type_}]\n{super().__str__()}"
+        return f"Primitive " + super().__str__()

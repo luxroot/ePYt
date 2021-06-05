@@ -1,3 +1,4 @@
+from copy import deepcopy
 from itertools import chain
 from . import domain
 
@@ -20,7 +21,7 @@ class Memory:
         if key in self.memory:
             return self.memory[key]
         else:  # Value.bottom (for our case, it's Any)
-            return domain.AnyType
+            return domain.AnyType()
 
     # Add (key, value) to memory
     def add(self, item):
@@ -38,6 +39,8 @@ class Memory:
         for key, value in chain(self.memory.items(), other.memory.items()):
             if key in joined_mem:
                 joined_mem[key] = value.join(joined_mem[key])
+            else:
+                joined_mem[key] = deepcopy(value)
         return joined_mem
 
     def __eq__(self, other: 'Memory'):
