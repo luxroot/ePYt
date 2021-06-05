@@ -52,7 +52,7 @@ def get_typedefs(script_path):
     try:
         exec(compiled, gvars)
     except SystemExit:
-        raise
+        pass
     classes = list(filter(isclass, gvars.values()))
     class_types = list(map(TypeDef, classes))
     return class_types
