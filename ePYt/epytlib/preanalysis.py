@@ -1,7 +1,9 @@
 import ast
-from inspect import signature, getmembers
-from . import domain
+from inspect import signature, getmembers, isclass
+from pathlib import Path
+from types import ModuleType
 
+from . import domain
 
 class TypeDef:
     @staticmethod
@@ -20,6 +22,11 @@ class TypeDef:
         self.type = domain.HasAttr()
         for key, value in getmembers(class_):
             if callable(value):
+                try:
+                    if type(value) == type(getattr(object, key)):
+                        continue
+                except AttributeError:
+                    pass
                 self.type.methods.append((key, self._get_signature(value)))
             else:
                 self.type.properties.append(key)
@@ -34,7 +41,20 @@ class TypeDef:
         return f"<TypeDef {self.module_name}.{self.class_name}\t" + \
                f"{repr(self.type)}"
 
+def get_typedefs(script_path):
+    script_path = Path(script_path)
+    tree = ast.parse(script_path.read_text())
+    compiled = compile(tree, "name", "exec")
 
-def get_typedefs(script):
-    tree = ast.parse(script)
-    tree
+    module = ModuleType(script_path.stem)
+    module.__loader__ = __loader__
+    module.__file__ = str(script_path)
+    module.__builtins__ = __builtins__
+    gvars = module.__dict__
+    try:
+        exec(compiled, gvars)
+    except SystemExit:
+        raise
+    classes = list(filter(isclass, gvars.values()))
+    class_types = list(map(TypeDef, classes))
+    return class_types
