@@ -13,4 +13,7 @@ class Class1:
 
 
 a = ePYt.preanalysis.TypeDef(Class1)
+b = ePYt.domain.PrimitiveType("int")
+print(a)
+print(b)
 _ = input()

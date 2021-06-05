@@ -26,9 +26,9 @@ class TypeDef:
 
     def __str__(self):
         return "\n".join(map(str, [f"Module : {str(self.module_name)}",
-                                   f"Class : {str(self.class_name)}",
-                                   "Type",
-                                   str(type)]))
+                                   f"Class name : {str(self.class_name)}",
+                                   "Corresponding HasAttr:",
+                                   str(self.type)]))
 
     def __repr__(self):
         return f"TypeDef <{str(self)}>"
