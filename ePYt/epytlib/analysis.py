@@ -1,5 +1,5 @@
 import ast
-from . import memory, preanalysis, domain
+from . import memory, preanalysis, domain, type_infer
 
 
 class FuncVisitor(ast.NodeVisitor):
@@ -14,4 +14,5 @@ class Analyzer:
 
     def __init__(self, file_path):
         self.user_types = preanalysis.get_typedefs(file_path)
+        self.type_infer = type_infer.TypeInfer(file_path) # Access by type_infer.get_type(lineno, colno)
 
