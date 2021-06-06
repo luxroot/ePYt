@@ -56,11 +56,10 @@ class Semantic(ast.NodeVisitor):
             self.fixed = False
 
     def run(self, funcDef: graph.FuncDef):
-        cfg = funcDef.graph
         self.args = funcDef.args
         while not self.fixed:
             self.fixed = True
-            for node in cfg.nodes:
+            for node in funcDef.graph.nodes:
                 input_mem = memory.Memory()
                 for prev in node.prev:
                     input_mem = input_mem.join(prev.memory)
@@ -114,3 +113,5 @@ class Semantic(ast.NodeVisitor):
     # x = 1
     def visit_Assign(self, node):
         pass
+
+
