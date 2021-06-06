@@ -12,6 +12,5 @@ class Class1:
         print(self.prop)
 
 
-# a = ePYt.analysis.Analyzer("sample_target/target.py")
-b = ePYt.preanalysis.get_typedefs("sample_target")
+a = ePYt.analysis.Analyzer("./target.py")
 _ = input()
