@@ -74,7 +74,7 @@ class Typed(HasAttr):
 
 
 class PrimitiveType(Typed):
-    prim_types = ["int", "str", "list", "dict"]  # TODO: To be filled
+    prim_types = ["int", "str", "float", "bool", "list", "dict"]  # TODO: To be filled
 
     def __init__(self, type_: str):  # Gets string not class
         if type_ in self.prim_types:

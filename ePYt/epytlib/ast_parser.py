@@ -1,19 +1,28 @@
 import ast
 from jedi import Script
+from . import domain
 
 
 class _Instrumenter (ast.NodeTransformer):
     def __init__(self, script: Script):
         self.script = script
 
+    # Changes jedi type to epyt type
+    def jedi_to_epyt (self, j_type):
+        t = j_type[0]
+        if t.full_name.startswith("builtin"):
+            return domain.PrimitiveType(t.get_type_hint())
+        else:   # Todo: User defined classes need to be handled
+            return None
+
+
     def visit_Assign(self, node: ast.Assign):
         node.type = None
         line, column = node.lineno, node.col_offset
         inferred_type = self.script.infer(line, column)
         if inferred_type:
-            node.type = inferred_type[0]
+            node.type = self.jedi_to_epyt(inferred_type)
         return node
-
 
 
 ''' 
@@ -29,8 +38,6 @@ def parse_with_type_info (filename):
     return instrumenter.visit(root)
 
 
-# root = parse_with_type_info("../../../example1.py")
-# print("Root =", ast.dump(root, True, indent = 4))
 
 
 
