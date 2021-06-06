@@ -91,8 +91,6 @@ class InitPropertiesVisitor(ast.NodeVisitor):
             if not isinstance(body, ast.FunctionDef):
                 continue
             if body.name == "__init__":
-                if node.name == 'addinfourl':
-                    print(node.name)
                 self.handle_init(node.name, body)
 
 
