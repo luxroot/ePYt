@@ -8,7 +8,7 @@ class Memory:
         if dict_default is None:
             self.memory = dict()
         elif isinstance(dict_default, Memory):  # Deep copy
-            self.memory = dict(dict_default.memory)
+            self.memory = deepcopy(dict_default.memory)
         elif isinstance(dict_default, dict):  # Shallow copy
             self.memory = dict_default
         else:
@@ -28,7 +28,7 @@ class Memory:
         new_dict = Memory(self)
         key, value = item
         if key in self.memory:
-            print(f"Joining {item} with existing:{self.memory[key]}")
+            # print(f"Joining {item} with existing:{self.memory[key]}")
             new_dict.memory[key] = value.join(self.memory[key])
         else:
             new_dict.memory[key] = value
