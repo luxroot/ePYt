@@ -1,10 +1,7 @@
 import ast
-import inspect
-from inspect import signature
 from . import graph
 from . import memory
 from . import domain
-from . import analysis
 from . import type_infer
 
 class Item():
@@ -61,7 +58,6 @@ class Semantic(ast.NodeVisitor):
         self.typeinfer = typeinfer
         self.args = []
         self.items = []
-        self.constructer = []
 
     def get_annotation_info(self, args):
         for arg in args:
