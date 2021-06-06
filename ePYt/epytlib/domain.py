@@ -11,6 +11,10 @@ class BaseType:
         return new_type
 
     def join(self, other):
+        if isinstance(self, FixType):
+            return self
+        if isinstance(other, FixType):
+            return other
         if isinstance(self, AnyType):
             return AnyType()
         if isinstance(other, AnyType):
@@ -61,6 +65,12 @@ class HasAttr(BaseType):
     def __ge__(self, other: 'HasAttr'):
         return other <= self
 
+    def __eq__(self, other: 'HasAttr'):
+        return self.properties == other.properties and self.methods == other.methods
+    
+    def __ne__(self, other: 'HasAttr'):
+        return not self == other
+
 
 class Typed(HasAttr):
     def __init__(self, typedef: preanalysis.TypeDef):
@@ -71,6 +81,24 @@ class Typed(HasAttr):
 
     def __str__(self):
         return f"Typed type [{self.typedef.class_name}]\n{super().__str__()}"
+
+
+class FixType(HasAttr):
+    def __init__(self, hasattr: HasAttr):
+        super().__init__()
+        self.properties.extend(hasattr.properties)
+        self.methods.extend(hasattr.methods)
+    
+    def __str__(self):
+        return f"Fiexd type\n{super().__str__()}"
+
+
+class AnnotatedType(FixType):
+    def __init__(self, strType):
+        self.strType = strType
+    
+    def __str__(self):
+        return f"Annotated type [{self.strType}]"
 
 
 class PrimitiveType(Typed):

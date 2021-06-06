@@ -1,16 +1,15 @@
 import ast
-import inspect
-from inspect import signature
 from . import graph
 from . import memory
 from . import domain
-from . import analysis
-from . import type_infer
 
-class Item():
-    def __init__(self, var:str, val:str):
+class Item:
+    def __init__(self, var, val):
         self.var = var
         self.val = val
+
+    def tuple(self):
+        return self.var, self.val
 
 class Semantic(ast.NodeVisitor):
     transfer_type = (graph.Atomic, graph.Branch)
@@ -55,28 +54,25 @@ class Semantic(ast.NodeVisitor):
         'dir': '__dir__',
         'size': '__sizeof__'}
 
-    def __init__(self, typeinfer: type_infer.TypeInfer):
+    def __init__(self):
         self.fixed = False
         self.initial_mem = memory.Memory()
-        self.typeinfer = typeinfer
         self.args = []
         self.items = []
-        self.constructer = []
 
     def get_annotation_info(self, args):
         for arg in args:
             self.args.append(arg.arg)
-            annotation = self.typeinfer.get_type(arg.lineno, arg.col_offset)
-            if annotation:
-                self.initial_mem = self.initial_mem.add(arg.arg, annotation)
+            if arg.annotation:
+                self.initial_mem = self.initial_mem.add((arg.arg, domain.AnnotatedType(arg.annotation)))
 
     def lift(self, node):
-        if len(node.instr_list) == 2:
+        if len(node.instr_list) == 2: # for branch
             if isinstance(node.instr_list[1], ast.Name) and\
                  ast.unparse(node.instr_list[1]) in self.args:
                 self.items.append(ast.unparse(node.instr_list[1]), '__iter__')
-        for instr in node.instr_list:
-            if isinstance(instr, self.transfer_type):
+        if isinstance(node, self.transfer_type):
+            for instr in node.instr_list:
                 self.visit(instr)
 
     def transfer_node(self, node, mem):
@@ -84,12 +80,17 @@ class Semantic(ast.NodeVisitor):
         new_memory = self.initial_mem.join(mem)
         while self.items:
             item = self.items.pop()
-            new_memory = new_memory.add(item)
+            var, val = item.tuple()
+            if val is None:
+                val = domain.FixType(mem[var])
+            new_memory = new_memory.add((var ,val))
         if new_memory != node.memory:
             node.memory = new_memory
             self.fixed = False
 
     def run(self, funcDef):
+        self.args = []
+        self.fixed = False
         self.get_annotation_info(funcDef.args.args)
         while not self.fixed:
             self.fixed = True
@@ -103,7 +104,7 @@ class Semantic(ast.NodeVisitor):
         var = ast.unparse(node.operand)
         if var in self.args:
             val = domain.HasAttr()
-            val.methods.append(self.op_to_method(type(node.op)))
+            val.methods.append(self.op_to_method[type(node.op)])
             self.items.append(Item(var, val))
         else:
             self.generic_visit(node)
@@ -112,7 +113,7 @@ class Semantic(ast.NodeVisitor):
         var = ast.unparse(node.left)
         if var in self.args:
             val = domain.HasAttr()
-            val.methods.append(self.op_to_method(type(node.op)))
+            val.methods.append(self.op_to_method[type(node.op)])
             self.items.append(Item(var, val))
         else:
             self.generic_visit(node)
@@ -121,7 +122,7 @@ class Semantic(ast.NodeVisitor):
         var = ast.unparse(node.left)
         if var in self.args:
             val = domain.HasAttr()
-            val.methods.append(self.op_to_method(type(node.ops[0])))
+            val.methods.append(self.op_to_method[type(node.ops[0])])
             self.items.append(Item(var, val))
             return node
         else:
@@ -129,19 +130,22 @@ class Semantic(ast.NodeVisitor):
 
     def visit_Call(self, node):
         fun_name = ast.unparse(node.func)
-        var = ast.unparse(node.func.value)
-        if fun_name in self.args:
+        if isinstance(node.func, ast.Attribute):
+            var = ast.unparse(node.func.value)
+            if var in self.args:
+                val = domain.HasAttr()
+                val.methods.append(node.func.attr)
+                self.items.append(Item(var, val))
+            else:
+                self.generic_visit(node)
+        elif fun_name in self.args:
             val = domain.HasAttr()
             val.methods.append('__call__')
-            self.items.append(Item(var, val))
-        elif var in self.args and isinstance(node.func, ast.Attribute):
-            val = domain.HasAttr()
-            val.methods.append(node.func.attr)
-            self.items.append(Item(var, val))
-        elif var in self.args and fun_name in self.func_to_method:
+            self.items.append(Item(fun_name, val))
+        elif fun_name in self.func_to_method and node.func.args[0] in self.args:
             val = domain.HasAttr()
             val.methods.append(self.func_to_method[fun_name])
-            self.items.append(Item(fun_name, val))
+            self.items.append(Item(node.func.args[0], val))
         else:
             self.generic_visit(node)
 
@@ -168,25 +172,11 @@ class Semantic(ast.NodeVisitor):
         else:
             self.generic_visit(node)
 
-    
-
-
-    # optional type using primitive type
-    # def visit_Assign(self, node):
-    #     var = ast.unparse(node.target)
-    #     if var in self.args:
-    #         if isinstance(node.value, ast.Constant):
-    #             prim_type = str(type(node.value.value)).split("'")[1]
-    #             val = domain.PrimitiveType(prim_type) 
-    #             self.items.append(Item(var, val))
-    #             return node
-    #         elif isinstance(node.value, ast.Call):
-    #             fun_name = ast.unparse(node.value.func)
-    #             if fun_name in self.constructer:
-    #                 class_type = 'some class constructer'
-    #                 val = domain.PrimitiveType(class_type)
-    #                 self.items.append(Item(var, val))
-    #                 return node
-    #     return self.generic_visit(node)
+    def visit_Assign(self, node):
+        var = ast.unparse(node.targets[0])
+        if var in self.args:
+            self.items.append(Item(var, None))
+        else:
+            self.generic_visit(node)
 
 

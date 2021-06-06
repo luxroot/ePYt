@@ -1,5 +1,6 @@
 import ast
 from itertools import chain
+from itertools import chain
 from pathlib import Path
 from . import preanalysis, domain, type_infer, graph, semantic
 
@@ -54,8 +55,8 @@ class Analyzer:
         # Can infer type by calling type_infer.get_type(lineno, colno)
         self.type_infer = type_infer.TypeInfer(file_path)
         self.file_info = FileInfo(file_path)
-        self.semantic = semantic.Semantic(self.type_infer)
-        for func_def in self.file_info.func_defs:
-            self.semantic.run(func_def)
-        
+        self.semantic = semantic.Semantic()
+        self.all_func_list = list(chain(*map(lambda x: x.func_defs, self.file_info.class_defs))) + self.file_info.func_defs
 
+        for func_def in self.all_func_list:
+            self.semantic.run(func_def)
