@@ -57,7 +57,7 @@ class InitPropertiesVisitor(ast.NodeVisitor):
     def get_self_attr(node):
         if not isinstance(node, ast.Attribute):
             return None
-        if not node.value.id == 'self':
+        if not (hasattr(node.value, 'id') and node.value.id == 'self'):
             return None
         return node.attr
 
