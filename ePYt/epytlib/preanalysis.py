@@ -24,7 +24,8 @@ class TypeDef:
             if callable(value):
                 if hasattr(object, key) and value == getattr(object, key):
                     continue
-                self.type.methods.append((key, self._get_signature(value)))
+                # self.type.methods.append((key, self._get_signature(value)))
+                self.type.methods.append(key)
             else:
                 self.type.properties.append(key)
 
