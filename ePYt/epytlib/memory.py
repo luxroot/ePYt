@@ -32,7 +32,8 @@ class Memory:
             new_dict.memory[key] = value.join(self.memory[key])
         else:
             new_dict.memory[key] = value
-
+        return new_dict
+        
     # Join with another memory
     def join(self, other):
         joined_mem = dict()
