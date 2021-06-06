@@ -27,9 +27,9 @@ class TypeDef:
         self.class_name = self.make_class_name(self.module_name,
                                                class_.__name__)
         self.type = domain.HasAttr()
-        self.subclasses = tuple(
+        self.base_classes = tuple(
             filter(lambda x: x not in (class_, object), getmro(class_)))
-        self.subclass_types = []
+        self.base_class_types = []
         for key, value in getmembers(class_):
             if callable(value):
                 if hasattr(object, key) and value == getattr(object, key):
@@ -84,7 +84,7 @@ class InitPropertiesVisitor(ast.NodeVisitor):
             return
         if class_name not in self.methods or call_func not in self.methods[
                 class_name]:
-            return  # not support subclass
+            return  # not support base_class
         self.handle_init(class_name, self.methods[class_name][call_func])
 
     def handle_init(self, class_name, init):
@@ -151,18 +151,19 @@ def get_typedefs(script_dir_path) -> Dict[str, TypeDef]:
             class_types[class_type.class_name] = class_type
     sys.path.pop()
 
-    # add all subclass_types recursively
+    # add all base_class_types recursively
     for class_type in list(class_types.values()):
 
-        def add_subclass(class_types, class_type):
-            for subclass in class_type.subclasses:
-                if subclass in class_types.keys():
+        def add_base_class(class_types, class_type):
+            for base_class in class_type.base_classes:
+                if base_class in class_types.keys():
                     continue
-                subclass_type = TypeDef(subclass)
-                class_types[subclass_type.class_name] = subclass_type
-                add_subclass(class_types, subclass_type)
+                base_class_type = TypeDef(base_class)
+                class_types[base_class_type.class_name] = base_class_type
+                class_type.base_class_types.append(base_class_type)
+                add_base_class(class_types, base_class_type)
 
-        add_subclass(class_types, class_type)
+        add_base_class(class_types, class_type)
 
     for script_path in script_paths:
         # get init properties
@@ -179,12 +180,12 @@ def get_typedefs(script_dir_path) -> Dict[str, TypeDef]:
             class_type.init_properties = init_props
             class_type.type.properties.extend(init_props)
 
-    # extend from subclass
+    # merge from base_class
     for class_type in class_types.values():
         props = class_type.type.properties
-        for subclass_type in class_type.subclass_types:
-            for subclass_init_prop in subclass_type.init_properties:
-                if subclass_init_prop in props:
+        for base_class_type in class_type.base_class_types:
+            for base_class_init_prop in base_class_type.init_properties:
+                if base_class_init_prop in props:
                     continue
-                props.append(subclass_init_prop)
+                props.append(base_class_init_prop)
     return class_types
