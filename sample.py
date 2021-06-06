@@ -13,5 +13,4 @@ class Class1:
 
 
 a = ePYt.analysis.Analyzer("./target.py")
-b = ePYt.graph.parse_from_file("./target.py")
 _ = input()
