@@ -4,6 +4,7 @@ from . import graph
 from . import memory
 from . import domain
 from . import analysis
+from . import type_infer
 
 class Item():
     def __init__(self, var:str, val:str):
@@ -36,19 +37,20 @@ class Semantic(ast.NodeVisitor):
         'int': '__int__',
         'float': '__float__'}
 
-    def __init__(self):
+    def __init__(self, typeinfer: type_infer.TypeInfer):
         self.fixed = False
         self.initial_mem = memory.Memory()
+        self.typeinfer = typeinfer
         self.args = []
         self.items = []
         self.constructer = []
 
-    def get_annotation(self, args):
+    def get_annotation_info(self, args):
         for arg in args:
-            if arg.annotaion:
-                annotation = ast.unparse(arg.annotation)
+            self.args.append(arg.arg)
+            annotation = self.get_type(arg.lineno, arg.col_offset)
+            if annotation:
                 self.initial_mem = self.initial_mem.add(arg.arg, annotation)
-
 
     def lift(self, node):
         for instr in node.instr_list:
@@ -57,7 +59,7 @@ class Semantic(ast.NodeVisitor):
 
     def transfer_node(self, node, mem):
         self.lift(node)
-        new_memory = self.initial_mem
+        new_memory = self.initial_mem.join(mem)
         while self.items:
             item = self.items.pop()
             new_memory = new_memory.add(item)
@@ -66,8 +68,7 @@ class Semantic(ast.NodeVisitor):
             self.fixed = False
 
     def run(self, funcDef):
-        self.get_annotation(funcDef.args.args)
-        self.args = list(map(lambda x: x.arg, funcDef.args.args))
+        self.get_annotation_info(funcDef.args.args)
         while not self.fixed:
             self.fixed = True
             for node in funcDef.graph.nodes:
@@ -82,8 +83,8 @@ class Semantic(ast.NodeVisitor):
             val = domain.HasAttr()
             val.methods.append(self.op_to_method(type(node.op)))
             self.items.append(Item(var, val))
-            return node
-        return self.generic_visit()
+        else:
+            self.generic_visit()
 
     def visit_Compare(self, node):
         var = ast.unparse(node.left)
@@ -92,24 +93,22 @@ class Semantic(ast.NodeVisitor):
             val.methods.append(self.op_to_method(type(node.op)))
             self.items.append(Item(var, val))
             return node
-        return self.generic_visit()
+        else:
+            self.generic_visit()
 
     def visit_Call(self, node):
-        if isinstance(node.func, ast.Attribute):
-            var = ast.unparse(node.func.value)
-            if var in self.args:
-                val = domain.HasAttr()
-                val.methods.append(node.func.attr)
-                self.items.append(Item(var, val))
-                return node
+        fun_name = ast.unparse(node.func)
+        var = ast.unparse(node.func.value)
+        if isinstance(node.func, ast.Attribute) and var in self.args:
+            val = domain.HasAttr()
+            val.methods.append(node.func.attr)
+            self.items.append(Item(var, val))
+        elif fun_name in self.func_to_method:
+            val = domain.HasAttr()
+            val.methods.append(self.func_to_method[fun_name])
+            self.items.append(Item(fun_name, val))
         else:
-            fun_name = ast.unparse(node.func)
-            if fun_name in self.func_to_method:
-                val = domain.HasAttr()
-                val.methods.append(self.func_to_method[fun_name])
-                self.items.append(Item(fun_name, val))
-                return node
-        return self.generic_visit()
+            self.generic_visit()
 
     def visit_Attribute(self, node):
         var = ast.unparse(node.value)
@@ -117,8 +116,8 @@ class Semantic(ast.NodeVisitor):
             val = domain.HasAttr()
             val.properties.append(node.attr)
             self.items.append(Item(var, val))
-            return node
-        return self.generic_visit()
+        else:
+            self.generic_visit()
 
     # optional type using primitive type
     # def visit_Assign(self, node):
