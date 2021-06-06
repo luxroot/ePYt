@@ -3,9 +3,10 @@ from inspect import signature
 from . import graph
 from . import memory
 from . import domain
+from . import analysis
 
 class Item():
-    def __init__(self, var, val):
+    def __init__(self, var:str, val:str):
         self.var = var
         self.val = val
 
@@ -37,26 +38,36 @@ class Semantic(ast.NodeVisitor):
 
     def __init__(self):
         self.fixed = False
+        self.initial_mem = memory.Memory()
         self.args = []
         self.items = []
+        self.constructer = []
+
+    def get_annotation(self, args):
+        for arg in args:
+            if arg.annotaion:
+                annotation = ast.unparse(arg.annotation)
+                self.initial_mem = self.initial_mem.add(arg.arg, annotation)
+
 
     def lift(self, node):
         for instr in node.instr_list:
             if isinstance(instr, self.transfer_type):
                 self.visit(instr)
 
-    def transfer_node(self, node, mem: memory.Memory):
+    def transfer_node(self, node, mem):
         self.lift(node)
-        new_memory = memory.Memory(mem)
+        new_memory = self.initial_mem
         while self.items:
             item = self.items.pop()
-            new_memory = memory.Memory.add(new_memory, item)
+            new_memory = new_memory.add(item)
         if new_memory != node.memory:
             node.memory = new_memory
             self.fixed = False
 
-    def run(self, funcDef: graph.FuncDef):
-        self.args = funcDef.args
+    def run(self, funcDef):
+        self.get_annotation(funcDef.args.args)
+        self.args = list(map(lambda x: x.arg, funcDef.args.args))
         while not self.fixed:
             self.fixed = True
             for node in funcDef.graph.nodes:
@@ -108,10 +119,23 @@ class Semantic(ast.NodeVisitor):
             self.items.append(Item(var, val))
             return node
         return self.generic_visit()
-        
-    # class constructer
-    # x = 1
-    def visit_Assign(self, node):
-        pass
+
+    # optional type using primitive type
+    # def visit_Assign(self, node):
+    #     var = ast.unparse(node.target)
+    #     if var in self.args:
+    #         if isinstance(node.value, ast.Constant):
+    #             prim_type = str(type(node.value.value)).split("'")[1]
+    #             val = domain.PrimitiveType(prim_type) 
+    #             self.items.append(Item(var, val))
+    #             return node
+    #         elif isinstance(node.value, ast.Call):
+    #             fun_name = ast.unparse(node.value.func)
+    #             if fun_name in self.constructer:
+    #                 class_type = 'some class constructer'
+    #                 val = domain.PrimitiveType(class_type)
+    #                 self.items.append(Item(var, val))
+    #                 return node
+    #     return self.generic_visit()
 
 

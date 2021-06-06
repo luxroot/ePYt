@@ -46,3 +46,6 @@ class Memory:
 
     def __eq__(self, other: 'Memory'):
         return self.memory == other.memory
+
+    def __ne__(self, other: 'Memory'):
+        return not self.__eq__(other)
