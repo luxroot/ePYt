@@ -12,6 +12,6 @@ class Class1:
         print(self.prop)
 
 
-a = ePYt.analysis.Analyzer("./target.py")
-b = ePYt.graph.parse_from_file("./target.py")
+# a = ePYt.analysis.Analyzer("sample_target/target.py")
+b = ePYt.preanalysis.get_typedefs("sample_target")
 _ = input()
