@@ -52,6 +52,19 @@ class TypeDef:
                f"{repr(self.type)}"
 
 
+class MethodsVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.methods: Dict[str, Dict[str, ast.AST]] = {}
+
+    def visit_ClassDef(self, node):
+        for body in node.body:
+            if not isinstance(body, ast.FunctionDef):
+                continue
+            if node.name not in self.methods:
+                self.methods[node.name] = {}
+            self.methods[node.name][body.name] = body
+
+
 class InitPropertiesVisitor(ast.NodeVisitor):
     @staticmethod
     def get_self_attr(node):
@@ -61,13 +74,27 @@ class InitPropertiesVisitor(ast.NodeVisitor):
             return None
         return node.attr
 
-    def __init__(self):
+    def __init__(self, methods):
         self.init_properties: Dict[str, list] = {}
+        self.methods: Dict[str, list] = methods
 
-    def handle_init(self, class_name, node):
-        for body in node.body:
+    def handle_call_in_init(self, class_name, node):
+        call_func = self.get_self_attr(node.func)
+        if not call_func:
+            return
+        if class_name not in self.methods or call_func not in self.methods[
+                class_name]:
+            return  # not support subclass
+        self.handle_init(class_name, self.methods[class_name][call_func])
+
+    def handle_init(self, class_name, init):
+        for body in init.body:
             if not (isinstance(body, ast.Assign)
                     or isinstance(body, ast.AugAssign)):
+                for node in ast.walk(body):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    self.handle_call_in_init(class_name, node)
                 continue
             assign = body
             targets = getattr(assign, 'target', None)
@@ -141,7 +168,9 @@ def get_typedefs(script_dir_path) -> Dict[str, TypeDef]:
         # get init properties
         module_name = make_module_name(script_dir_path, script_path)
         tree = ast.parse(script_path.read_text())
-        init_props_visitor = InitPropertiesVisitor()
+        methods_visitor = MethodsVisitor()
+        methods_visitor.visit(tree)
+        init_props_visitor = InitPropertiesVisitor(methods_visitor.methods)
         init_props_visitor.visit(tree)
         init_props = init_props_visitor.init_properties
         for class_name, init_props in init_props.items():
