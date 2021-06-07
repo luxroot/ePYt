@@ -31,7 +31,8 @@ class HasProperty(HasAttrInfo):
 
 
 class Fixed(HasAttrInfo):
-    type_string = "fixed"
+    type_string = "Fixed"
+
     def __init__(self, arg_key):
         super().__init__(arg_key, None)
 
@@ -110,7 +111,8 @@ class Lifter(ast.NodeVisitor):
             self._add_method(fun_name, "__call__")
         elif fun_name in self.func_to_method and \
                 ast.unparse(node.func.args[0]) in self.args:
-            self._add_method(ast.unparse(node.func.args[0]), self.func_to_method[fun_name])
+            self._add_method(ast.unparse(node.func.args[0]),
+                             self.func_to_method[fun_name])
 
     # __index__ is called when list[x]
     # __index__ is not called when dict[x]
@@ -177,7 +179,7 @@ class Semantic:
         new_memory = self.initial_mem.join(input_mem)
         while has_attr_list:
             arg_key, lifted_value = has_attr_list.pop()
-            if lifted_value is None:
+            if lifted_value is None:  # Fixed types are lifted as None
                 lifted_value = domain.FixedType(input_mem[arg_key])
             new_memory = new_memory.add((arg_key, lifted_value))
         if new_memory != self.table[table_key]:
