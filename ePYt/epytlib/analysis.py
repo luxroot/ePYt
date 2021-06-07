@@ -1,7 +1,8 @@
 import ast
+from copy import deepcopy
 from itertools import chain
 from pathlib import Path
-from . import preanalysis, domain, graph, semantic
+from . import domain, graph, type_inferer
 
 
 class FuncDef:
@@ -36,11 +37,11 @@ class ClassDef:
 
 class FileInfo:
     def __init__(self, script_path):
-        script_path = Path(script_path)
-        tree = ast.parse(script_path.read_text())
+        self.path = Path(script_path)
+        self.tree = ast.parse(self.path.read_text())
         self.func_defs = []
         self.class_defs = []
-        for node in tree.body:
+        for node in self.tree.body:
             if isinstance(node, ast.ClassDef):
                 self.class_defs.append(ClassDef(node))
             elif isinstance(node, ast.FunctionDef):
@@ -52,30 +53,26 @@ class Analyzer:
 
     def __init__(self, dir_path):
         self.dir_path = Path(dir_path)
-        self.user_types = preanalysis.get_typedefs(dir_path)
+        self.type_inferer = type_inferer.TypeInferer(self.dir_path)
         # Can infer type by calling type_infer.get_type(lineno, colno)
         # self.type_infer = type_infer.TypeInfer(dir_path)
         self.file_infos = []
         for src_path in self.dir_path.rglob('*.py'):
             file_info = FileInfo(src_path)
             self.file_infos.append(file_info)
-        self.analyze()
+        self.analyzed_files = self.analyze(self.file_infos)
 
-    def analyze(self):
-        for file_info in self.file_infos:
+
+    def analyze(self, file_infos) -> FileInfo:
+        analyzed_files = deepcopy(file_infos)
+        for file_info in file_infos:
+            analyzed_file = FileInfo(file_info.path)
+            analyzed_files.append(analyzed_file)
             all_func_list = \
                 list(chain(*map(lambda x: x.func_defs, file_info.class_defs)))
             all_func_list += file_info.func_defs
             for func_def in all_func_list:
-                table = semantic.Semantic(func_def).table
-                print(table, '\n\n')
-                # Todo: should replace with a function that takes table and infer type
-                # for node in func_def.graph.nodes:
-                #     for variable, value in node.memory.memory.items():
-                #         node_attrs = set(value.attributes)
-                #         fit_user_types = filter(
-                #             lambda x: set(x.type.attributes).issuperset(node_attrs),
-                #             self.user_types.values())
-                #         func_def.arg_types[variable] = list(fit_user_types)
-                # return func_def
-        # return file_infos
+                inferred_types = self.type_inferer.infer(func_def)
+                func_def.arg_types = inferred_types
+
+        return analyzed_files
