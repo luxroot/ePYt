@@ -8,6 +8,8 @@ class BaseType:
         new_type = deepcopy(a)
         new_type.properties.extend(b.properties)
         new_type.methods.extend(b.methods)
+        new_type.properties = list(set(new_type.properties))
+        new_type.methods = list(set(new_type.methods))
         return new_type
 
     def join(self, other):
