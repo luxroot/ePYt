@@ -1,23 +1,35 @@
-class BaseClass:
-    base_prop = 1
-
-    def init(self):
-        # Custom init prop
-        self.custom_base_init_prop = 2
+class Class1:
+    prop = "asdf"
 
     def __init__(self):
-        self.base_init_prop = 3
-        self.init()
+        self.a = 1
+
+    def method(self):
+        print(self.prop)
 
 
-class DerivedClass(BaseClass):
-    derived_prop = 4
+class DumbClass:
+    pass
 
-    def init(self):
-        # Custom init prop
-        self.custom_derived_init_prop = 5
 
-    def __init__(self):
-        super().__init__()
-        self.derived_init_prop = 6
-        self.init()
+def if_test(var, qwer):
+    if True:
+        a = 1
+        if False:
+            b = 2
+        else:
+            c = 3
+        d = 4
+    else:
+        e = 5
+    f = 6
+    return a, b, c, d, e, f
+
+
+def for_test(b):
+    for a in b.method():
+        aa = 1
+    else:
+        bb = 1
+    return aa, bb
+

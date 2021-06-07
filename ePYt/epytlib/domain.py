@@ -41,6 +41,10 @@ class HasAttr(BaseType):
     def __init__(self):
         self.properties = list()
         self.methods = list()
+    
+    @property
+    def attributes(self):
+        return self.methods + self.properties
 
     def has_property(self, prop: str):
         return prop in self.properties
