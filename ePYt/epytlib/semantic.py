@@ -2,6 +2,7 @@ import ast
 from . import graph
 from . import memory
 from . import domain
+from . import table
 
 
 class HasAttrInfo:
@@ -149,16 +150,17 @@ class Semantic:
             if arg.annotation:
                 initial_arg = (arg.arg, domain.AnnotatedType(arg.annotation))
                 self.initial_mem = self.initial_mem.add(initial_arg)
+        self.table = table.Table(func_def.graph.nodes, self.initial_mem)
         while not self.reached_fixed_point:
             self.reached_fixed_point = True
-            for graph_node in func_def.graph.nodes:
+            for table_key in self.table.table.keys():
                 input_mem = memory.Memory()
-                for prev in graph_node.prev:
-                    input_mem = input_mem.join(prev.memory)
-                self.transfer_node(graph_node, input_mem)
+                for prev in table_key.prev:
+                    input_mem = input_mem.join(self.table[prev])
+                self.transfer_node(table_key, input_mem)
 
-    def transfer_node(self, graph_node, input_mem):
-        lifted_value_list = Lifter(self.args).lift(graph_node)
+    def transfer_node(self, table_key, input_mem):
+        lifted_value_list = Lifter(self.args).lift(table_key)
         has_attr_list = self.convert_to_has_attr_list(lifted_value_list)
         new_memory = self.initial_mem.join(input_mem)
         while has_attr_list:
@@ -166,6 +168,6 @@ class Semantic:
             if arg_key is None:
                 lifted_value = domain.FixedType(input_mem[arg_key])
             new_memory = new_memory.add((arg_key, lifted_value))
-        if new_memory != graph_node.memory:
-            graph_node.memory = new_memory
+        if new_memory != self.table[table_key]:
+            self.table[table_key] = new_memory
             self.reached_fixed_point = False

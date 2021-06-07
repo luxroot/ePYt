@@ -43,7 +43,7 @@ class HasAttr(BaseType):
     def __init__(self):
         self.properties = list()
         self.methods = list()
-    
+
     @property
     def attributes(self):
         return self.methods + self.properties
@@ -52,17 +52,17 @@ class HasAttr(BaseType):
         return prop in self.properties
 
     def has_method(self, method: str):
-        return method in map(lambda x: x[0], self.methods)
+        return method in self.methods
 
     def __str__(self):
-        return "HasAttr\n" + \
-               "\n".join(["Properties", "\n".join(self.properties),
-                          "Methods", "\n".join(map(str, self.methods))])
+        return "HasAttr of " + \
+               " ".join(["Properties: " + ("EMPTY" if self.properties == [] else
+                                           ", ".join(self.properties)),
+                         "Methods: " + ("EMPTY" if self.methods == [] else
+                                        ", ".join(map(str, self.methods)))])
 
     def __repr__(self):
-        return '<HasAttr [Prop:' + ','.join(self.properties)[:50] + '\t' + \
-               'Method:' + ','.join(map(lambda x: x[0], self.methods))[:50] + \
-               ']>'
+        return f'<{str(self)}>'
 
     def __le__(self, other: 'HasAttr'):
         return self.properties <= other.properties and \
@@ -74,7 +74,7 @@ class HasAttr(BaseType):
     def __eq__(self, other: 'HasAttr'):
         return self.properties == other.properties and \
                self.methods == other.methods
-    
+
     def __ne__(self, other: 'HasAttr'):
         return not self == other
 
@@ -95,15 +95,15 @@ class FixedType(HasAttr):
         super().__init__()
         self.properties.extend(has_attr.properties)
         self.methods.extend(has_attr.methods)
-    
+
     def __str__(self):
         return f"Fixed type\n{super().__str__()}"
 
 
-class AnnotatedType(FixedType):
+class AnnotatedType(BaseType):
     def __init__(self, str_type):
         self.strType = str_type
-    
+
     def __str__(self):
         return f"Annotated type [{self.strType}]"
 
@@ -112,7 +112,7 @@ class PrimitiveType(Typed):
     # TODO: To be filled
     prim_types = [int, str, float, bool, list, dict]
 
-    def __init__(self, type_):  # Gets string not class
+    def __init__(self, type_):
         if type_ in self.prim_types:
             super().__init__(preanalysis.TypeDef(type_))
 

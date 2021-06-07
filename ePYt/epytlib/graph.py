@@ -1,13 +1,11 @@
 import ast
 from pathlib import Path
-from . import memory
 
 
 class Node:
     def __init__(self, instr_list, prev):
         self.instr_list = instr_list
         self.prev = prev
-        self.memory = memory.Memory()
 
     def __str__(self):
         return f"{','.join(map(ast.unparse, self.instr_list))} <- [" + \
