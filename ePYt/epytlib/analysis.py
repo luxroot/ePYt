@@ -65,7 +65,7 @@ class Analyzer:
 
     def analyze(self, file_infos) -> FileInfo:
         analyzed_files = deepcopy(file_infos)
-        for file_info in file_infos:
+        for file_info in analyzed_files:
             analyzed_file = FileInfo(file_info.path)
             analyzed_files.append(analyzed_file)
             all_func_list = \
