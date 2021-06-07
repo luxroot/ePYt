@@ -1,8 +1,7 @@
 import ast
 from itertools import chain
-from itertools import chain
 from pathlib import Path
-from . import preanalysis, domain, type_infer, graph, semantic
+from . import preanalysis, domain, graph, semantic
 
 
 class FuncDef:
@@ -60,24 +59,23 @@ class Analyzer:
         for src_path in self.dir_path.rglob('*.py'):
             file_info = FileInfo(src_path)
             self.file_infos.append(file_info)
-        self.analyze(self.file_infos)
+        self.analyze()
 
-    def run_semantic(self, func_def: FuncDef):
-        semantic.Semantic(func_def)
-        for node in func_def.graph.nodes:
-            for variable, value in node.memory.memory.items():
-                node_attrs = set(value.attributes)
-                fit_user_types = filter(
-                    lambda x: set(x.type.attributes).issuperset(node_attrs),
-                    self.user_types.values())
-                func_def.arg_types[variable] = list(fit_user_types)
-        return func_def
-
-    def analyze(self, file_infos: list):
+    def analyze(self):
         for file_info in self.file_infos:
             all_func_list = \
                 list(chain(*map(lambda x: x.func_defs, file_info.class_defs)))
             all_func_list += file_info.func_defs
             for func_def in all_func_list:
-                self.run_semantic(func_def)
-        return file_infos
+                table = semantic.Semantic(func_def).table
+                print(table, '\n\n')
+                # Todo: should replace with a function that takes table and infer type
+                # for node in func_def.graph.nodes:
+                #     for variable, value in node.memory.memory.items():
+                #         node_attrs = set(value.attributes)
+                #         fit_user_types = filter(
+                #             lambda x: set(x.type.attributes).issuperset(node_attrs),
+                #             self.user_types.values())
+                #         func_def.arg_types[variable] = list(fit_user_types)
+                # return func_def
+        # return file_infos

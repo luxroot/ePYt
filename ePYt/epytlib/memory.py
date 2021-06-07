@@ -49,3 +49,9 @@ class Memory:
 
     def __ne__(self, other: 'Memory'):
         return self.memory != other.memory
+
+    def __str__(self):
+        return '\n'.join(map(lambda x: f"{x[0]} : {x[1]}", self.memory.items()))
+
+    def __repr__(self):
+        return f"<Memory {str(self)}>"
