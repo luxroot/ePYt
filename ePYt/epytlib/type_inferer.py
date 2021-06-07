@@ -5,8 +5,9 @@ from functools import reduce
 class TypeInferer:
     def __init__(self, dir_path):
         self.user_types = preanalysis.get_typedefs(dir_path)
-
-    def match(self, user_type_attrs, lifted_value_attrs):
+    
+    @staticmethod
+    def match(user_type_attrs, lifted_value_attrs):
         return set(user_type_attrs).issuperset(lifted_value_attrs)
 
     # Overide me on your inference strategy
