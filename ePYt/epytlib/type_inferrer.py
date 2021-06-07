@@ -21,8 +21,6 @@ class TypeInferrer:
                        self.user_types.values()))
         return inferred_user_types
 
-    # #return list(inferred_user_types)
-
     def infer(self, func_def):
         table = semantic.Semantic(func_def).table
         return self.infer_table(table)
