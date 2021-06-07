@@ -22,14 +22,14 @@ class FuncDef:
 class ClassDef:
     def __init__(self, class_def: ast.ClassDef):
         self.class_name = class_def.name
-        self.func_defs = []
+        self.func_defs = {}
         for node in class_def.body:
             if isinstance(node, ast.FunctionDef):
-                self.func_defs.append(FuncDef(node))
+                self.func_defs[node.name] = FuncDef(node)
 
     def __str__(self):
         return f"class {self.class_name}:" + \
-               ", ".join(map(lambda x: x.function_name, self.func_defs))
+               ", ".join(map(lambda x: x.function_name, self.func_defs.values()))
 
     def __repr__(self):
         return f"<ClassDef {str(self)}>"
@@ -39,13 +39,13 @@ class FileInfo:
     def __init__(self, script_path):
         self.path = Path(script_path)
         self.tree = ast.parse(self.path.read_text())
-        self.func_defs = []
-        self.class_defs = []
+        self.func_defs = {}
+        self.class_defs = {}
         for node in self.tree.body:
             if isinstance(node, ast.ClassDef):
-                self.class_defs.append(ClassDef(node))
+                self.class_defs[node.name] = ClassDef(node)
             elif isinstance(node, ast.FunctionDef):
-                self.func_defs.append(FuncDef(node))
+                self.func_defs[node.name] = FuncDef(node)
 
 
 class Analyzer:
@@ -66,9 +66,11 @@ class Analyzer:
         analyzed_files = deepcopy(file_infos)
         for file_info in analyzed_files:
             all_func_list = \
-                list(chain(*map(lambda x: x.func_defs, file_info.class_defs)))
-            all_func_list += file_info.func_defs
+                list(chain(*map(lambda x: x.func_defs.values(), file_info.class_defs.values())))
+            all_func_list += file_info.func_defs.values()
             for func_def in all_func_list:
                 inferred_types = self.type_inferrer.infer(func_def)
                 func_def.arg_types = inferred_types
+        from IPython import embed 
+        embed()
         return analyzed_files
