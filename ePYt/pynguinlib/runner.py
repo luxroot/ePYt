@@ -36,5 +36,5 @@ class Pynguin(object):
         project_path = kwargs.get("project_path", self.project_path)
         output_path = kwargs.get("output_path", self.output_path)
         if spawn:
-            return self.spawn_pynguin(algorithm, project_path, output_path, module_name, capture_output)
+            return self.spawn_pynguin(algorithm, project_path, output_path, module_name, spawn, capture_output)
         return self.run_pynguin(algorithm, project_path, output_path, module_name)

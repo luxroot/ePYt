@@ -91,10 +91,11 @@ class Typed(HasAttr):
 
 
 class FixedType(HasAttr):
-    def __init__(self, has_attr: HasAttr):
+    def __init__(self, has_attr):
         super().__init__()
-        self.properties.extend(has_attr.properties)
-        self.methods.extend(has_attr.methods)
+        if isinstance(has_attr, HasAttr):
+            self.properties.extend(has_attr.properties)
+            self.methods.extend(has_attr.methods)
 
     def __str__(self):
         return f"Fixed type\n{super().__str__()}"

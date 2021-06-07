@@ -30,6 +30,12 @@ class HasProperty(HasAttrInfo):
     type_string = "HasProperty"
 
 
+class Fixed(HasAttrInfo):
+    type_string = "fixed"
+    def __init__(self, arg_key):
+        super().__init__(arg_key, None)
+
+
 class Lifter(ast.NodeVisitor):
     handling_types = (graph.Atomic, graph.Branch)
 
@@ -59,6 +65,9 @@ class Lifter(ast.NodeVisitor):
 
     def _add_property(self, key, value):
         self.lifted_values.append(HasProperty(key, value))
+    
+    def _add_fixed(self, key):
+        self.lifted_values.append(Fixed(key))
 
     def lift(self, graph_node):
         if len(graph_node.instr_list) == 2:  # for branch
@@ -90,41 +99,42 @@ class Lifter(ast.NodeVisitor):
             self._add_method(arg_key, self.op_to_method[type(node.ops[0])])
 
     def visit_Call(self, node):
-        self.generic_visit(node)
         fun_name = ast.unparse(node.func)
         if isinstance(node.func, ast.Attribute):
             arg_key = ast.unparse(node.func.value)
             if arg_key in self.args:
                 self._add_method(arg_key, node.func.attr)
-        elif fun_name in self.args:
+                return
+        self.generic_visit(node)
+        if fun_name in self.args:
             self._add_method(fun_name, "__call__")
-        elif fun_name in self.func_to_method and node.func.args[0] in self.args:
-            self._add_method(node.func.args[0], self.func_to_method[fun_name])
+        elif fun_name in self.func_to_method and \
+                ast.unparse(node.func.args[0]) in self.args:
+            self._add_method(ast.unparse(node.func.args[0]), self.func_to_method[fun_name])
 
+    # __index__ is called when list[x]
+    # __index__ is not called when dict[x]
     def visit_Subscript(self, node):
         self.generic_visit(node)
         arg_key = ast.unparse(node.value)
         if arg_key in self.args:
-            self._add_method(arg_key, "__index__")
-            if not (isinstance(node.slice, ast.Constant) and
-                    type(node.slice.value) == int):
+            if isinstance(node.ctx, ast.Load):
                 self._add_method(arg_key, "__getitem__")
+            elif isinstance(node.ctx, ast.Store):
                 self._add_method(arg_key, "__setitem__")
 
-    def visit_Attribute(self, node):  # Todo: Incomplete
+    # __getattribute__ is called both object has property or not
+    # __getattr__ is called when object does not have property
+    # __getattr__ call __setattr__
+    def visit_Attribute(self, node):
         self.generic_visit(node)
         arg_key = ast.unparse(node.value)
-        if arg_key in self.args:  # Todo: Urgent!
-            pass
-            # self._add_method(arg_key, "__getattr__")
-            # self._add_method(arg_key, "__setattr__")
+        if arg_key in self.args:
+            self._add_property(arg_key, node.attr)
 
-    def visit_Assign(self, node):  # Todo: Incomplete
-        pass
-        # self.generic_visit(node)
-        # arg_key = ast.unparse(node.targets[0])
-        # if arg_key in self.args:
-        #     self.lifted_values.append(HasAttrInfo(arg_key, None))
+    def visit_Name(self, node):
+        if isinstance(node.ctx, ast.Store):
+            self._add_fixed(node.id)
 
 
 class Semantic:
@@ -139,6 +149,8 @@ class Semantic:
                 ret_dict[key].methods.append(value)
             elif isinstance(has_attr_info, HasProperty):
                 ret_dict[key].properties.append(value)
+            elif isinstance(has_attr_info, Fixed):
+                ret_dict[key] = value
         return list(ret_dict.items())
 
     def __init__(self, func_def):
@@ -165,7 +177,7 @@ class Semantic:
         new_memory = self.initial_mem.join(input_mem)
         while has_attr_list:
             arg_key, lifted_value = has_attr_list.pop()
-            if arg_key is None:
+            if lifted_value is None:
                 lifted_value = domain.FixedType(input_mem[arg_key])
             new_memory = new_memory.add((arg_key, lifted_value))
         if new_memory != self.table[table_key]:
