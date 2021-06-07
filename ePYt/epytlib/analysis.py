@@ -63,8 +63,7 @@ class Analyzer:
         self.analyze(self.file_infos)
 
     def run_semantic(self, func_def: FuncDef):
-        semantic_ = semantic.Semantic()
-        semantic_.run(func_def)
+        semantic.Semantic(func_def)
         for node in func_def.graph.nodes:
             for variable, value in node.memory.memory.items():
                 node_attrs = set(value.attributes)
@@ -76,8 +75,8 @@ class Analyzer:
 
     def analyze(self, file_infos: list):
         for file_info in self.file_infos:
-            all_func_list = list(
-                chain(*map(lambda x: x.func_defs, file_info.class_defs)))
+            all_func_list = \
+                list(chain(*map(lambda x: x.func_defs, file_info.class_defs)))
             all_func_list += file_info.func_defs
             for func_def in all_func_list:
                 self.run_semantic(func_def)
