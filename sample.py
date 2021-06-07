@@ -1,5 +1,4 @@
 import ePYt
-import ast
 
 
 class Class1:
@@ -12,5 +11,5 @@ class Class1:
         print(self.prop)
 
 
-a = ePYt.analysis.Analyzer("./target.py")
+a = ePYt.analysis.Analyzer("./sample_target")
 _ = input()

@@ -1,12 +1,15 @@
 import ast
+from itertools import chain
+from itertools import chain
 from pathlib import Path
-from . import preanalysis, domain, type_infer, graph
+from . import preanalysis, domain, type_infer, graph, semantic
 
 
 class FuncDef:
     def __init__(self, func_def: ast.FunctionDef):
         self.function_name = func_def.name
         self.args = func_def.args
+        self.arg_types = {}
         self.graph = graph.Graph(func_def.body)
 
     def __str__(self):
@@ -48,9 +51,33 @@ class FileInfo:
 class Analyzer:
     prim_types = [*map(domain.PrimitiveType, domain.PrimitiveType.prim_types)]
 
-    def __init__(self, file_path):
-        self.user_types = preanalysis.get_typedefs(file_path)
+    def __init__(self, dir_path):
+        self.dir_path = Path(dir_path)
+        self.user_types = preanalysis.get_typedefs(dir_path)
         # Can infer type by calling type_infer.get_type(lineno, colno)
-        self.type_infer = type_infer.TypeInfer(file_path)
-        self.file_info = FileInfo(file_path)
+        # self.type_infer = type_infer.TypeInfer(dir_path)
+        self.file_infos = []
+        for src_path in self.dir_path.rglob('*.py'):
+            file_info = FileInfo(src_path)
+            self.file_infos.append(file_info)
+        self.analyze(self.file_infos)
 
+    def run_semantic(self, func_def: FuncDef):
+        semantic.Semantic(func_def)
+        for node in func_def.graph.nodes:
+            for variable, value in node.memory.memory.items():
+                node_attrs = set(value.attributes)
+                fit_user_types = filter(
+                    lambda x: set(x.type.attributes).issuperset(node_attrs),
+                    self.user_types.values())
+                func_def.arg_types[variable] = list(fit_user_types)
+        return func_def
+
+    def analyze(self, file_infos: list):
+        for file_info in self.file_infos:
+            all_func_list = \
+                list(chain(*map(lambda x: x.func_defs, file_info.class_defs)))
+            all_func_list += file_info.func_defs
+            for func_def in all_func_list:
+                self.run_semantic(func_def)
+        return file_infos

@@ -8,9 +8,15 @@ class BaseType:
         new_type = deepcopy(a)
         new_type.properties.extend(b.properties)
         new_type.methods.extend(b.methods)
+        new_type.properties = list(set(new_type.properties))
+        new_type.methods = list(set(new_type.methods))
         return new_type
 
     def join(self, other):
+        if isinstance(self, FixedType):
+            return self
+        if isinstance(other, FixedType):
+            return other
         if isinstance(self, AnyType):
             return AnyType()
         if isinstance(other, AnyType):
@@ -37,6 +43,10 @@ class HasAttr(BaseType):
     def __init__(self):
         self.properties = list()
         self.methods = list()
+    
+    @property
+    def attributes(self):
+        return self.methods + self.properties
 
     def has_property(self, prop: str):
         return prop in self.properties
@@ -61,6 +71,13 @@ class HasAttr(BaseType):
     def __ge__(self, other: 'HasAttr'):
         return other <= self
 
+    def __eq__(self, other: 'HasAttr'):
+        return self.properties == other.properties and \
+               self.methods == other.methods
+    
+    def __ne__(self, other: 'HasAttr'):
+        return not self == other
+
 
 class Typed(HasAttr):
     def __init__(self, typedef: preanalysis.TypeDef):
@@ -73,12 +90,31 @@ class Typed(HasAttr):
         return f"Typed type [{self.typedef.class_name}]\n{super().__str__()}"
 
 
-class PrimitiveType(Typed):
-    prim_types = ["int", "str", "float", "bool", "list", "dict"]  # TODO: To be filled
+class FixedType(HasAttr):
+    def __init__(self, has_attr: HasAttr):
+        super().__init__()
+        self.properties.extend(has_attr.properties)
+        self.methods.extend(has_attr.methods)
+    
+    def __str__(self):
+        return f"Fixed type\n{super().__str__()}"
 
-    def __init__(self, type_: str):  # Gets string not class
+
+class AnnotatedType(FixedType):
+    def __init__(self, str_type):
+        self.strType = str_type
+    
+    def __str__(self):
+        return f"Annotated type [{self.strType}]"
+
+
+class PrimitiveType(Typed):
+    # TODO: To be filled
+    prim_types = [int, str, float, bool, list, dict]
+
+    def __init__(self, type_):  # Gets string not class
         if type_ in self.prim_types:
-            super().__init__(preanalysis.TypeDef(eval(type_)))
+            super().__init__(preanalysis.TypeDef(type_))
 
     def __str__(self):
         return f"Primitive " + super().__str__()

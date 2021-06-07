@@ -25,23 +25,27 @@ class Memory:
 
     # Add (key, value) to memory
     def add(self, item):
-        new_dict = Memory(self)
+        new_mem = Memory(self)
         key, value = item
         if key in self.memory:
             # print(f"Joining {item} with existing:{self.memory[key]}")
-            new_dict.memory[key] = value.join(self.memory[key])
+            new_mem.memory[key] = value.join(self.memory[key])
         else:
-            new_dict.memory[key] = value
-
+            new_mem.memory[key] = value
+        return new_mem
+        
     # Join with another memory
     def join(self, other):
-        joined_mem = dict()
+        joined_mem = Memory()
         for key, value in chain(self.memory.items(), other.memory.items()):
             if key in joined_mem:
-                joined_mem[key] = value.join(joined_mem[key])
+                joined_mem.memory[key] = value.join(joined_mem[key])
             else:
-                joined_mem[key] = deepcopy(value)
+                joined_mem.memory[key] = deepcopy(value)
         return joined_mem
 
     def __eq__(self, other: 'Memory'):
         return self.memory == other.memory
+
+    def __ne__(self, other: 'Memory'):
+        return self.memory != other.memory
