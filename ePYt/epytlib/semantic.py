@@ -35,7 +35,7 @@ class Lifter(ast.NodeVisitor):
 
     op_to_method = {
         ast.UAdd: '__pos__', ast.USub: '__neg__', ast.Invert: '__invert__',
-        ast.Not: '__not__', ast.Add: '__add__', ast.Sub: '__sub__',
+        ast.Not: '__not__', ast.Is: '__is__', ast.IsNot: '__isnot__', ast.Add: '__add__', ast.Sub: '__sub__',
         ast.Mult: '__mul__', ast.Div: '__div__', ast.Mod: '__mod__',
         ast.Pow: '__pow__', ast.LShift: '__lshift__', ast.RShift: '__rshift__',
         ast.BitOr: '__or__', ast.BitXor: '__xor__', ast.BitAnd: '__and__',
@@ -98,8 +98,8 @@ class Lifter(ast.NodeVisitor):
                 self._add_method(arg_key, node.func.attr)
         elif fun_name in self.args:
             self._add_method(fun_name, "__call__")
-        elif fun_name in self.func_to_method and node.func.args[0] in self.args:
-            self._add_method(node.func.args[0], self.func_to_method[fun_name])
+        elif fun_name in self.func_to_method and node.args[0] in self.args:
+            self._add_method(node.args[0], self.func_to_method[fun_name])
 
     def visit_Subscript(self, node):
         self.generic_visit(node)
