@@ -9,11 +9,9 @@ class Class1:
 
 
 def for_test(b):
-    for a in b.method():
-        aa = 1
-    else:
-        bb = 1
-    return aa, bb
+    b.method()
+    b = 1
+    print('hi')
 #
 #
 # class DumbClass:
