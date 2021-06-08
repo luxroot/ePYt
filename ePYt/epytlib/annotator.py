@@ -22,7 +22,9 @@ class NodeAnnotator(ast.NodeTransformer):
         if class_name is None:
             func_defs = self.analyzed_file.func_defs
         else:
-            class_def = self.analyzed_file.class_defs[class_name]
+            class_def = self.analyzed_file.class_defs.get(class_name, None)
+            if class_def is None:
+                return node
             func_defs = class_def.func_defs
         func_def = func_defs.get(node.name, None)
         if func_def is None:
