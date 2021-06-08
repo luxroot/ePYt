@@ -11,5 +11,6 @@ class Class1:
         print(self.prop)
 
 
-a = ePYt.analysis.Analyzer("./sample_target")
+analysis_result = ePYt.analysis.Analyzer("./sample_target")
+print(analysis_result.type_inferrer.table)
 _ = input()

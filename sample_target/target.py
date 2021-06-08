@@ -8,9 +8,11 @@
 #         print(self.prop)
 
 
-def for_test(b):
-    b.method()
-    b = b + 1
+def for_test(a, b, c, d):
+    a.method()
+    a = a + 1
+    d = 3
+    print(b)
     print('hi')
 #
 #

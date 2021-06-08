@@ -87,7 +87,7 @@ class Typed(HasAttr):
         self.methods.extend(typedef.type.methods)
 
     def __str__(self):
-        return f"Typed type [{self.typedef.class_name}]\n{super().__str__()}"
+        return f"Typed type [{self.typedef.class_name}] {super().__str__()}"
 
 
 class FixedType(HasAttr):
@@ -98,7 +98,7 @@ class FixedType(HasAttr):
             self.methods.extend(has_attr.methods)
 
     def __str__(self):
-        return f"Fixed type\n{super().__str__()}"
+        return f"Fixed type {super().__str__()}"
 
 
 class AnnotatedType(BaseType):
