@@ -110,7 +110,7 @@ class Lifter(ast.NodeVisitor):
             arg_key = ast.unparse(node.comparators[i])
             if arg_key in self.args:
                 if isinstance(node.ops[i], ast.In) or isinstance(node.ops[i], ast.NotIn):
-                    self._add_method(node.comparators[i])
+                    self._add_method(arg_key, self.op_to_method(node.comparators[i]))
 
     def visit_Call(self, node):
         fun_name = ast.unparse(node.func)
