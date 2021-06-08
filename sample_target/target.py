@@ -1,16 +1,16 @@
-class Class1:
-    prop = "asdf"
-
-    def __init__(self):
-        self.a = 1
-
-    def method(self):
-        print(self.prop)
+# class Class1:
+#     prop = "asdf"
+#
+#     def __init__(self):
+#         self.a = 1
+#
+#     def method(self):
+#         print(self.prop)
 
 
 def for_test(b):
     b.method()
-    b = 1
+    b = b + 1
     print('hi')
 #
 #
