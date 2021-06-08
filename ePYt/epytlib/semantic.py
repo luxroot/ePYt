@@ -47,7 +47,6 @@ class Lifter(ast.NodeVisitor):
 
     op_to_method = {
         ast.UAdd: '__pos__', ast.USub: '__neg__', ast.Invert: '__invert__',
-        ast.Not: '__not__', ast.Is: '__is__', ast.IsNot: '__isnot__',
         ast.Add: '__add__', ast.Sub: '__sub__', ast.Mult: '__mul__',
         ast.Div: 'truediv', ast.Mod: '__mod__', ast.Pow: '__pow__',
         ast.LShift: '__lshift__', ast.RShift: '__rshift__',
@@ -61,8 +60,7 @@ class Lifter(ast.NodeVisitor):
         'abs': '__abs__', 'len': '__len__', 'int': '__int__', 'oct': '__oct__',
         'float': '__float__', 'complex': '__complex__', 'str': '__str__',
         'hex': '__hex__', 'bool': '__nonzero__', 'dir': '__dir__',
-        'repr': '__repr__', 'unicode': '__unicode__', 'size': '__sizeof__',
-        'hash': '__hash__', 'divmod': 'divmod'}
+        'repr': '__repr__', 'hash': '__hash__', 'divmod': 'divmod'}
 
     def __init__(self, args):
         self.lifted_values = []
@@ -103,8 +101,16 @@ class Lifter(ast.NodeVisitor):
     def visit_Compare(self, node):
         self.generic_visit(node)
         arg_key = ast.unparse(node.left)
-        if arg_key in self.args:
-            self._add_method(arg_key, self.op_to_method[type(node.ops[0])])
+        for i in range(len(node.ops)):
+            # except ast.In and ast.NotIn
+            if arg_key in self.args:
+                if not (isinstance(node.ops[i], ast.In) or isinstance(node.ops[i], ast.NotIn)):
+                    self._add_method(arg_key, self.op_to_method[type(node.ops[i])])
+            # for ast.In and ast.NotIn
+            arg_key = ast.unparse(node.comparators[i])
+            if arg_key in self.args:
+                if isinstance(node.ops[i], ast.In) or isinstance(node.ops[i], ast.NotIn):
+                    self._add_method(node.comparators[i])
 
     def visit_Call(self, node):
         fun_name = ast.unparse(node.func)
