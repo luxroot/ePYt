@@ -1,4 +1,4 @@
-from . import preanalysis, semantic
+from . import preanalysis, semantic, memory
 from functools import reduce
 
 
@@ -12,13 +12,16 @@ class TypeInferrer:
 
     # Override me on your inference strategy
     def infer_table(self, table):
-        memory = reduce(lambda x, y: x.join(y), table.table.values())
+        joined_memory = reduce(lambda x, y: x.join(y),
+                               table.table.values(),
+                               memory.Memory())
         inferred_user_types = {}
-        for arg_key, lifted_value in memory.memory.items():
+        for arg_key, lifted_value in joined_memory.memory.items():
             inferred_user_types[arg_key] = list(
-                filter(lambda x: self.match(x.type.attributes,
-                                            lifted_value.attributes),
-                       self.user_types.values()))
+                filter(
+                    lambda x: self.match(x.type.attributes,
+                                         lifted_value.attributes),
+                    self.user_types.values()))
         return inferred_user_types
 
     def infer(self, func_def):
