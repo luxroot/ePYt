@@ -14,4 +14,4 @@ class Class1:
 a = ePYt.analysis.Analyzer("./sample_target")
 print(a.table)
 analyzed_files = a.analyze(a.file_infos)
-ePYt.annotator.Annotator.annotate_dir("./sample_target", analyzed_files)
+ePYt.annotator.Annotator.annotate_dir(a.dir_path, analyzed_files)
