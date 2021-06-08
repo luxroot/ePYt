@@ -42,7 +42,7 @@ class Lifter(ast.NodeVisitor):
 
     op_to_method = {
         ast.UAdd: '__pos__', ast.USub: '__neg__', ast.Invert: '__invert__',
-        ast.Not: '__not__', ast.Add: '__add__', ast.Sub: '__sub__',
+        ast.Not: '__not__', ast.Is: '__is__', ast.IsNot: '__isnot__', ast.Add: '__add__', ast.Sub: '__sub__',
         ast.Mult: '__mul__', ast.Div: '__div__', ast.Mod: '__mod__',
         ast.Pow: '__pow__', ast.LShift: '__lshift__', ast.RShift: '__rshift__',
         ast.BitOr: '__or__', ast.BitXor: '__xor__', ast.BitAnd: '__and__',
