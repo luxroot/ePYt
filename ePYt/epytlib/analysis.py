@@ -29,7 +29,8 @@ class ClassDef:
 
     def __str__(self):
         return f"class {self.class_name}:" + \
-               ", ".join(map(lambda x: x.function_name, self.func_defs.values()))
+               ", ".join(map(lambda x: x.function_name,
+                             self.func_defs.values()))
 
     def __repr__(self):
         return f"<ClassDef {str(self)}>"
@@ -61,15 +62,16 @@ class Analyzer:
             file_info = FileInfo(src_path)
             self.file_infos.append(file_info)
         self.analyzed_files = self.analyze(self.file_infos)
+        self.table = self.type_inferrer.table
 
     def analyze(self, file_infos) -> FileInfo:
         analyzed_files = deepcopy(file_infos)
         for file_info in analyzed_files:
             all_func_list = \
-                list(chain(*map(lambda x: x.func_defs.values(), file_info.class_defs.values())))
+                list(chain(*map(lambda x: x.func_defs.values(),
+                                file_info.class_defs.values())))
             all_func_list += file_info.func_defs.values()
             for func_def in all_func_list:
                 inferred_types = self.type_inferrer.infer(func_def)
                 func_def.arg_types = inferred_types
-
         return analyzed_files

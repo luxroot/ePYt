@@ -33,7 +33,7 @@ class Memory:
         else:
             new_mem.memory[key] = value
         return new_mem
-        
+
     # Join with another memory
     def join(self, other):
         joined_mem = Memory()
@@ -43,6 +43,14 @@ class Memory:
             else:
                 joined_mem.memory[key] = deepcopy(value)
         return joined_mem
+
+    def fix(self, key):
+        assert key in self.memory
+        value = self.memory[key]
+        if value.attributes:
+            self.memory[key] = domain.FixedType(value)
+        else:  # FixedType(AnyType) contains no information
+            del self.memory[key]
 
     def __eq__(self, other: 'Memory'):
         return self.memory == other.memory
