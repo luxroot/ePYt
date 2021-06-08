@@ -71,6 +71,5 @@ class Analyzer:
             for func_def in all_func_list:
                 inferred_types = self.type_inferrer.infer(func_def)
                 func_def.arg_types = inferred_types
-        from IPython import embed 
-        embed()
+
         return analyzed_files
