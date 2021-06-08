@@ -62,6 +62,7 @@ class Analyzer:
             file_info = FileInfo(src_path)
             self.file_infos.append(file_info)
         self.analyzed_files = self.analyze(self.file_infos)
+        self.table = self.type_inferrer.table
 
     def analyze(self, file_infos) -> FileInfo:
         analyzed_files = deepcopy(file_infos)

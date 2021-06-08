@@ -1,7 +1,6 @@
 import ast
 from inspect import signature, getmembers, isclass, getmro
 from pathlib import Path
-from re import sub
 from types import ModuleType
 from typing import Dict
 import sys
@@ -83,8 +82,8 @@ class InitPropertiesVisitor(ast.NodeVisitor):
         call_func = self.get_self_attr(node.func)
         if not call_func:
             return
-        if class_name not in self.methods or call_func not in self.methods[
-                class_name]:
+        if class_name not in self.methods or \
+                call_func not in self.methods[class_name]:
             return  # not support base_class
         self.handle_init(class_name, self.methods[class_name][call_func])
 
@@ -155,14 +154,14 @@ def get_typedefs(script_dir_path) -> Dict[str, TypeDef]:
     # add all base_class_types recursively
     for class_type in list(class_types.values()):
 
-        def add_base_class(class_types, class_type):
-            for base_class in class_type.base_classes:
-                if base_class in class_types.keys():
+        def add_base_class(class_types_, class_type_):
+            for base_class in class_type_.base_classes:
+                if base_class in class_types_.keys():
                     continue
-                base_class_type = TypeDef(base_class)
-                class_types[base_class_type.class_name] = base_class_type
-                class_type.base_class_types.append(base_class_type)
-                add_base_class(class_types, base_class_type)
+                base_class_type_ = TypeDef(base_class)
+                class_types_[base_class_type_.class_name] = base_class_type_
+                class_type_.base_class_types.append(base_class_type_)
+                add_base_class(class_types_, base_class_type_)
 
         add_base_class(class_types, class_type)
 

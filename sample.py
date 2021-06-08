@@ -12,5 +12,5 @@ class Class1:
 
 
 analysis_result = ePYt.analysis.Analyzer("./sample_target")
-print(analysis_result.type_inferrer.table)
+print(analysis_result.table)
 _ = input()

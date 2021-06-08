@@ -1,15 +1,15 @@
 import ast
 from copy import deepcopy
-from typing import Dict, List
+from typing import List
 import shutil
-from pathlib import Path 
-
+from pathlib import Path
 from . import analysis
+
 
 class NodeAnnotator(ast.NodeTransformer):
     def __init__(self, analyzed_file: analysis.FileInfo):
         self.analyzed_file = analyzed_file
-    
+
     @staticmethod
     def create_union(ids: List[str]):
         value = ast.Name(id='Union')
@@ -18,7 +18,7 @@ class NodeAnnotator(ast.NodeTransformer):
         subscript = ast.Subscript(value=value, slice=slice)
         return subscript
 
-    def annotate_FunctionDef(self, node, class_name = None):
+    def annotate_FunctionDef(self, node, class_name=None):
         if class_name is None:
             func_defs = self.analyzed_file.func_defs
         else:
@@ -31,7 +31,8 @@ class NodeAnnotator(ast.NodeTransformer):
             inferred_types = func_def.arg_types.get(arg.arg, None)
             if not inferred_types:
                 continue
-            inferred_type_names = list(map(lambda x: x.class_.__name__, inferred_types))
+            inferred_type_names = list(
+                map(lambda x: x.class_.__name__, inferred_types))
             annotation = self.create_union(inferred_type_names)
             if annotation:
                 arg.annotation = annotation
@@ -57,17 +58,18 @@ class NodeAnnotator(ast.NodeTransformer):
         import_union = self.create_import_from('typing', ['Union'])
         node.body.insert(0, import_union)
         self.generic_visit(node)
-        return node 
-            
+        return node
+
+
 class Annotator:
-    @staticmethod 
+    @staticmethod
     def annotate(analyzed_file):
         tree = deepcopy(analyzed_file.tree)
         node_annotator = NodeAnnotator(analyzed_file)
         tree = node_annotator.visit(tree)
         return tree
 
-    @staticmethod 
+    @staticmethod
     def annotate_dir(dir_path, analyzed_files):
         dir_path = Path(dir_path)
         new_dir_path = Path(f"{str(dir_path)}.annotated")
@@ -84,7 +86,3 @@ class Annotator:
 /a/b.annotated
 /a
 '''
-
-
-
-    
