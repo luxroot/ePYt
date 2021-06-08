@@ -110,8 +110,8 @@ class Lifter(ast.NodeVisitor):
         if fun_name in self.args:
             self._add_method(fun_name, "__call__")
         elif fun_name in self.func_to_method and \
-                ast.unparse(node.func.args[0]) in self.args:
-            self._add_method(ast.unparse(node.func.args[0]),
+                ast.unparse(node.args[0]) in self.args:
+            self._add_method(ast.unparse(node.args[0]),
                              self.func_to_method[fun_name])
 
     # __index__ is called when list[x]
