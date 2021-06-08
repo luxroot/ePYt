@@ -2,7 +2,7 @@ import ast
 from copy import deepcopy
 from itertools import chain
 from pathlib import Path
-from . import domain, graph, type_inferrer
+from . import graph, type_inferrer
 
 
 class FuncDef:
@@ -50,8 +50,6 @@ class FileInfo:
 
 
 class Analyzer:
-    prim_types = [*map(domain.PrimitiveType, domain.PrimitiveType.prim_types)]
-
     def __init__(self, dir_path):
         self.dir_path = Path(dir_path)
         self.type_inferrer = type_inferrer.TypeInferrer(self.dir_path)
