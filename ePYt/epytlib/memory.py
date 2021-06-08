@@ -44,6 +44,11 @@ class Memory:
                 joined_mem.memory[key] = deepcopy(value)
         return joined_mem
 
+    def fix(self, key):
+        assert key in self.memory
+        value = self.memory[key]
+        self.memory[key] = domain.FixedType(value)
+
     def __eq__(self, other: 'Memory'):
         return self.memory == other.memory
 

@@ -5,11 +5,19 @@ from . import domain
 from . import table
 
 
-class HasAttrInfo:
+class LiftedValue:
     type_string = ""
 
-    def __init__(self, arg_key, lifted_value):
+    def __init__(self, arg_key):
         self.arg_key = arg_key
+
+    def get_key(self):
+        return self.arg_key
+
+
+class HasAttrInfo(LiftedValue):
+    def __init__(self, arg_key, lifted_value):
+        super().__init__(arg_key)
         self.lifted_value = lifted_value
 
     def get_as_tuple(self):
@@ -30,11 +38,8 @@ class HasProperty(HasAttrInfo):
     type_string = "HasProperty"
 
 
-class Fixed(HasAttrInfo):
-    type_string = "Fixed"
-
-    def __init__(self, arg_key):
-        super().__init__(arg_key, None)
+class HasAssigned(LiftedValue):
+    type_string = "HasAssigned"
 
 
 class Lifter(ast.NodeVisitor):
@@ -42,9 +47,10 @@ class Lifter(ast.NodeVisitor):
 
     op_to_method = {
         ast.UAdd: '__pos__', ast.USub: '__neg__', ast.Invert: '__invert__',
-        ast.Not: '__not__', ast.Is: '__is__', ast.IsNot: '__isnot__', ast.Add: '__add__', ast.Sub: '__sub__',
-        ast.Mult: '__mul__', ast.Div: '__div__', ast.Mod: '__mod__',
-        ast.Pow: '__pow__', ast.LShift: '__lshift__', ast.RShift: '__rshift__',
+        ast.Not: '__not__', ast.Is: '__is__', ast.IsNot: '__isnot__',
+        ast.Add: '__add__', ast.Sub: '__sub__', ast.Mult: '__mul__',
+        ast.Div: '__div__', ast.Mod: '__mod__', ast.Pow: '__pow__',
+        ast.LShift: '__lshift__', ast.RShift: '__rshift__',
         ast.BitOr: '__or__', ast.BitXor: '__xor__', ast.BitAnd: '__and__',
         ast.Eq: '__eq__', ast.NotEq: '__ne__', ast.Lt: '__lt__',
         ast.LtE: '__le__', ast.Gt: '__gt__', ast.GtE: '__ge__',
@@ -55,7 +61,7 @@ class Lifter(ast.NodeVisitor):
         'float': '__float__', 'complex': '__complex__', 'str': '__str__',
         'hex': '__hex__', 'bool': '__nonzero__', 'dir': '__dir__',
         'repr': '__repr__', 'unicode': '__unicode__', 'size': '__sizeof__',
-        'string.format': '__format__', 'hash': '__hash__'}
+        'hash': '__hash__'}
 
     def __init__(self, args):
         self.lifted_values = []
@@ -66,9 +72,9 @@ class Lifter(ast.NodeVisitor):
 
     def _add_property(self, key, value):
         self.lifted_values.append(HasProperty(key, value))
-    
-    def _add_fixed(self, key):
-        self.lifted_values.append(Fixed(key))
+
+    def _has_assigned(self, key):
+        self.lifted_values.append(HasAssigned(key))
 
     def lift(self, graph_node):
         if len(graph_node.instr_list) == 2:  # for branch
@@ -136,24 +142,25 @@ class Lifter(ast.NodeVisitor):
 
     def visit_Name(self, node):
         if isinstance(node.ctx, ast.Store):
-            self._add_fixed(node.id)
+            self._has_assigned(node.id)
 
 
 class Semantic:
     @staticmethod
-    def convert_to_has_attr_list(has_attr_info_list):
+    def convert_to_has_attr_list(lifted_value_list):
         ret_dict = {}
-        for has_attr_info in has_attr_info_list:
-            key, value = has_attr_info.get_as_tuple()
+        has_fixed_list = []
+        for has_attr_info in lifted_value_list:
+            key = has_attr_info.get_key()
             if key not in ret_dict:
                 ret_dict[key] = domain.HasAttr()
             if isinstance(has_attr_info, HasMethod):
-                ret_dict[key].methods.append(value)
+                ret_dict[key].methods.append(has_attr_info.lifted_value)
             elif isinstance(has_attr_info, HasProperty):
-                ret_dict[key].properties.append(value)
-            elif isinstance(has_attr_info, Fixed):
-                ret_dict[key] = value
-        return list(ret_dict.items())
+                ret_dict[key].properties.append(has_attr_info.lifted_value)
+            elif isinstance(has_attr_info, HasAssigned):
+                has_fixed_list.append(key)
+        return list(ret_dict.items()), has_fixed_list
 
     def __init__(self, func_def):
         self.reached_fixed_point = False
@@ -175,13 +182,13 @@ class Semantic:
 
     def transfer_node(self, table_key, input_mem):
         lifted_value_list = Lifter(self.args).lift(table_key)
-        has_attr_list = self.convert_to_has_attr_list(lifted_value_list)
+        has_attr_list, has_fixed_list = \
+            self.convert_to_has_attr_list(lifted_value_list)
         new_memory = self.initial_mem.join(input_mem)
-        while has_attr_list:
-            arg_key, lifted_value = has_attr_list.pop()
-            if lifted_value is None:  # Fixed types are lifted as None
-                lifted_value = domain.FixedType(input_mem[arg_key])
+        for arg_key, lifted_value in has_attr_list:
             new_memory = new_memory.add((arg_key, lifted_value))
+            if arg_key in has_fixed_list:
+                new_memory.fix(arg_key)
         if new_memory != self.table[table_key]:
             self.table[table_key] = new_memory
             self.reached_fixed_point = False

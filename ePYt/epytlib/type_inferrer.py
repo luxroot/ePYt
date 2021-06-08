@@ -5,6 +5,7 @@ from functools import reduce
 class TypeInferrer:
     def __init__(self, dir_path):
         self.user_types = preanalysis.get_typedefs(dir_path)
+        self.table = None
 
     @staticmethod
     def match(user_type_attrs, lifted_value_attrs):
@@ -25,5 +26,5 @@ class TypeInferrer:
         return inferred_user_types
 
     def infer(self, func_def):
-        table = semantic.Semantic(func_def).table
-        return self.infer_table(table)
+        self.table = semantic.Semantic(func_def).table
+        return self.infer_table(self.table)
