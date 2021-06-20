@@ -70,9 +70,12 @@ class Annotator:
         return tree
 
     @staticmethod
-    def annotate_dir(dir_path, analyzed_files):
+    def annotate_dir(dir_path, analyzed_files, output_dir=None):
         dir_path = Path(dir_path)
-        new_dir_path = Path(f"{str(dir_path)}.annotated")
+        if output_dir:
+            new_dir_path = Path(output_dir)
+        else:
+            new_dir_path = Path(f"{str(dir_path)}.annotated")
         shutil.copytree(dir_path, new_dir_path, dirs_exist_ok=True)
         for analyzed_file in analyzed_files:
             relative_path = analyzed_file.path.relative_to(dir_path)
