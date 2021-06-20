@@ -49,19 +49,20 @@ class Lifter(ast.NodeVisitor):
         ast.UAdd: '__pos__', ast.USub: '__neg__', ast.Invert: '__invert__',
         ast.Not: '__not__', ast.Is: '__is__', ast.IsNot: '__isnot__',
         ast.Add: '__add__', ast.Sub: '__sub__', ast.Mult: '__mul__',
-        ast.Div: '__div__', ast.Mod: '__mod__', ast.Pow: '__pow__',
+        ast.Div: 'truediv', ast.Mod: '__mod__', ast.Pow: '__pow__',
         ast.LShift: '__lshift__', ast.RShift: '__rshift__',
         ast.BitOr: '__or__', ast.BitXor: '__xor__', ast.BitAnd: '__and__',
         ast.Eq: '__eq__', ast.NotEq: '__ne__', ast.Lt: '__lt__',
         ast.LtE: '__le__', ast.Gt: '__gt__', ast.GtE: '__ge__',
-        ast.In: '__contains__', ast.NotIn: '__contains__'}
+        ast.In: '__contains__', ast.NotIn: '__contains__',
+        ast.FloorDiv: 'floordiv'}
 
     func_to_method = {
         'abs': '__abs__', 'len': '__len__', 'int': '__int__', 'oct': '__oct__',
         'float': '__float__', 'complex': '__complex__', 'str': '__str__',
         'hex': '__hex__', 'bool': '__nonzero__', 'dir': '__dir__',
         'repr': '__repr__', 'unicode': '__unicode__', 'size': '__sizeof__',
-        'hash': '__hash__'}
+        'hash': '__hash__', 'divmod': 'divmod'}
 
     def __init__(self, args):
         self.lifted_values = []

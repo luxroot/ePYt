@@ -1,4 +1,4 @@
-from urllib.request import URLopener
+from urllib1.request import URLopener
 class B():
     def __init__(self, f: URLopener):
         self.f = f

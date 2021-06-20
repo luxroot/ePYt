@@ -111,11 +111,11 @@ class AnnotatedType(BaseType):
 
 class PrimitiveType(Typed):
     # TODO: To be filled
-    prim_types = [int, str, float, bool, list, dict]
+    prim_types = ["int", "str", "float", "bool", "list", "dict"]
 
     def __init__(self, type_):
         if type_ in self.prim_types:
-            super().__init__(preanalysis.TypeDef(type_))
+            super().__init__(preanalysis.TypeDef(eval(type_)))
 
     def __str__(self):
         return f"Primitive " + super().__str__()
