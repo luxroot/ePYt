@@ -1,10 +1,17 @@
-from . import preanalysis, semantic, memory
+from . import preanalysis, semantic, memory, domain
 from functools import reduce
 
 
 class TypeInferrer:
+    prim_types = [*map(domain.PrimitiveType, domain.PrimitiveType.prim_types)]
+
     def __init__(self, dir_path):
-        self.user_types = preanalysis.get_typedefs(dir_path)
+        self.prim_type_dicts = {}
+        for prim_type in domain.PrimitiveType.prim_types:
+            v = domain.PrimitiveType(prim_type)
+            self.prim_type_dicts[prim_type] = v.typedef
+        self.type_candidates = preanalysis.get_typedefs(dir_path)
+        self.type_candidates.update(self.prim_type_dicts)
         self.table = None
 
     @staticmethod
@@ -18,11 +25,13 @@ class TypeInferrer:
                                memory.Memory())
         inferred_user_types = {}
         for arg_key, lifted_value in joined_memory.memory.items():
+            if arg_key == 'self':
+                continue
             inferred_user_types[arg_key] = list(
                 filter(
                     lambda x: self.match(x.type.attributes,
                                          lifted_value.attributes),
-                    self.user_types.values()))
+                    self.type_candidates.values()))
         return inferred_user_types
 
     def infer(self, func_def):

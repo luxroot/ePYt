@@ -11,6 +11,7 @@ class Class1:
         print(self.prop)
 
 
-analysis_result = ePYt.analysis.Analyzer("./sample_target")
-print(analysis_result.table)
-_ = input()
+a = ePYt.analysis.Analyzer("./sample_target")
+print(a.table)
+analyzed_files = a.analyze(a.file_infos)
+ePYt.annotator.Annotator.annotate_dir(a.dir_path, analyzed_files)
